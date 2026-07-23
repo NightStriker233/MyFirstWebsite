@@ -1,0 +1,11 @@
+{
+  "name": "my-first-website",
+  "version": "1.0.0",
+  "description": "我的个人网站 - 留言板",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "@vercel/postgres": "^0.10.0"
+  }
+}
