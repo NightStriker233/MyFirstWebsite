@@ -5,6 +5,3 @@ compatibility_date = "2024-01-01"
 binding = "DB"
 database_name = "my-first-website-db"
 database_id = "f9694609-f016-4843-b741-c3efc300b0e5"
-
-[pages]
-compatibility_flags = ["nodejs_compat"]
