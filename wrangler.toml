@@ -1,0 +1,10 @@
+name = "my-first-website"
+compatibility_date = "2024-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "my-first-website-db"
+database_id = ""
+
+[pages]
+compatibility_flags = ["nodejs_compat"]
