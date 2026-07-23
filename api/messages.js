@@ -23,9 +23,7 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  const client = createClient({
-    connectionString: process.env.POSTGRES_URL
-  });
+  const client = createClient(process.env.POSTGRES_URL);
 
   try {
     await client.connect();
