@@ -10,18 +10,22 @@
 </head>
 <body>
 
-  <!-- 导航栏 -->
+  <!-- ============================
+       导航栏
+  ============================ -->
   <nav class="navbar">
     <div class="container nav-container">
       <a href="#" class="nav-logo">✦ MySpace</a>
       <div class="nav-links">
-        <a href="#intro">首页</a>
+        <a href="#about">关于我</a>
         <a href="#messages">留言板</a>
       </div>
     </div>
   </nav>
 
-  <!-- Hero 介绍区 -->
+  <!-- ============================
+       首屏 Hero（欢迎页）
+  ============================ -->
   <section class="hero" id="intro">
     <div class="hero-bg"></div>
     <div class="container hero-content">
@@ -29,25 +33,81 @@
       <h1 class="hero-title">Hi，我是 <span class="gradient-text">新手上路</span></h1>
       <p class="hero-subtitle">
         这是我亲手搭建的第一个网站，从零开始，一步一步走到这里。
-        虽然还很简单，但每一步都是新的尝试。记录成长，分享点滴。
+        虽然还很简单，但每一步都是新的尝试。
       </p>
       <div class="hero-cta">
-        <a href="#messages" class="btn btn-primary">💬 给我留言</a>
-      </div>
-      <div class="hero-stats">
-        <div class="stat-item">
-          <span class="stat-number" id="totalMessages">0</span>
-          <span class="stat-label">条留言</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-number">2026</span>
-          <span class="stat-label">始于今年</span>
-        </div>
+        <a href="#about" class="btn btn-primary">✨ 进入主页</a>
       </div>
     </div>
   </section>
 
-  <!-- 留言板区域 -->
+  <!-- ============================
+       关于我（自我介绍 + 教育经历）
+       ✏️ 编辑方法：直接改下面 <!-- 注释 --> 之间的文字内容
+  ============================ -->
+  <section class="about-section" id="about">
+    <div class="container">
+
+      <!-- ---- 自我介绍 ---- -->
+      <div class="section-header">
+        <h2>👤 关于我</h2>
+        <p>一个不断学习、热爱折腾的新手</p>
+      </div>
+
+      <div class="intro-card">
+        <!-- ✏️ 把你的名字改在这里 -->
+        <h3 class="intro-name">新手上路</h3>
+        <!-- ✏️ 把你的自我介绍改在这里 -->
+        <p class="intro-text">
+          你好！我是一名编程爱好者，正在学习如何搭建自己的网站。
+          这个站点就是我一步一步实践的结果。虽然现在看起来还很简单，
+          但每一点进步都让我充满成就感。我相信坚持学习，总有一天能做出很棒的东西。
+        </p>
+        <!-- ✏️ 标签可以增删改 -->
+        <div class="intro-tags">
+          <span class="tag">💻 编程新手</span>
+          <span class="tag">🌱 持续成长</span>
+          <span class="tag">🚀 热爱探索</span>
+        </div>
+      </div>
+
+      <!-- ---- 教育经历 ---- -->
+      <div class="section-header" style="margin-top: 60px;">
+        <h2>🎓 教育经历</h2>
+        <p>学无止境，每一步都算数</p>
+      </div>
+
+      <!-- ✏️ 在这里增删教育经历条目 -->
+      <div class="timeline">
+
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-content">
+            <!-- ✏️ 学校名称 -->
+            <h4>你的学校名称</h4>
+            <!-- ✏️ 专业/学位 -->
+            <span class="timeline-meta">专业名称 · 202X - 202X</span>
+            <!-- ✏️ 描述 -->
+            <p>在这里填写你的学习经历和收获。</p>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-content">
+            <h4>你的学校名称</h4>
+            <span class="timeline-meta">专业名称 · 202X - 202X</span>
+            <p>在这里填写你的学习经历和收获。</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================
+       留言板
+  ============================ -->
   <section class="messages-section" id="messages">
     <div class="container">
       <div class="section-header">
@@ -55,7 +115,6 @@
         <p>留下你想说的话吧，每一条留言都是对我的鼓励</p>
       </div>
 
-      <!-- 留言表单 -->
       <div class="message-form-card">
         <h3>写留言</h3>
         <form id="messageForm">
@@ -74,7 +133,6 @@
         <div id="formFeedback" class="form-feedback" style="display:none"></div>
       </div>
 
-      <!-- 留言列表 -->
       <div class="messages-list" id="messagesList">
         <div class="loading-state">
           <div class="loading-spinner"></div>
