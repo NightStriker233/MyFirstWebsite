@@ -1,5 +1,20 @@
 import { sql } from '@vercel/postgres';
 
+// 自动建表（只在表不存在时执行）
+async function initTable() {
+  await sql`
+    CREATE TABLE IF NOT EXISTS messages (
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(100) NOT NULL,
+      content TEXT NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages (created_at DESC)
+  `;
+}
+
 export default async function handler(req, res) {
   // 设置 CORS 头
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -11,8 +26,10 @@ export default async function handler(req, res) {
   }
 
   try {
+    // 确保表已创建
+    await initTable();
+
     if (req.method === 'GET') {
-      // 获取所有留言，按时间倒序
       const { rows } = await sql`
         SELECT id, name, content, created_at
         FROM messages
@@ -24,8 +41,6 @@ export default async function handler(req, res) {
 
     if (req.method === 'POST') {
       const { name, content } = req.body || {};
-
-      // 验证输入
       if (!name || !content) {
         return res.status(400).json({ error: '请填写名字和留言内容' });
       }
@@ -46,7 +61,6 @@ export default async function handler(req, res) {
       return res.status(201).json({ message: rows[0] });
     }
 
-    // 其他方法不支持
     return res.status(405).json({ error: '方法不允许' });
   } catch (err) {
     console.error('API Error:', err);
