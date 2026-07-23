@@ -2,10 +2,11 @@
   "name": "my-first-website",
   "version": "1.0.0",
   "description": "我的个人网站 - 留言板",
+  "type": "module",
   "scripts": {
     "dev": "vercel dev"
   },
   "dependencies": {
-    "@vercel/postgres": "^0.10.0"
+    "pg": "^8.13.0"
   }
 }
