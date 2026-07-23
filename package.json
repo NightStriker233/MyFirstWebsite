@@ -1,12 +1,5 @@
 {
   "name": "my-first-website",
   "version": "1.0.0",
-  "description": "我的个人网站 - 留言板",
-  "type": "module",
-  "scripts": {
-    "dev": "vercel dev"
-  },
-  "dependencies": {
-    "pg": "^8.13.0"
-  }
+  "description": "我的个人网站 - 留言板"
 }
