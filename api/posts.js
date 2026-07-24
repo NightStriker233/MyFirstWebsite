@@ -12,11 +12,12 @@ async function initTable() {
   const client = await pool.connect();
   try {
     await client.query(
-      "CREATE TABLE IF NOT EXISTS posts (id SERIAL PRIMARY KEY, title VARCHAR(200) NOT NULL, content TEXT NOT NULL, created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(), updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW())"
+      "CREATE TABLE IF NOT EXISTS posts (id SERIAL PRIMARY KEY, title VARCHAR(200) NOT NULL, content TEXT NOT NULL, tags VARCHAR(500) DEFAULT '', created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(), updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW())"
     );
     await client.query(
       "CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts (created_at DESC)"
     );
+    await client.query("ALTER TABLE posts ADD COLUMN IF NOT EXISTS tags VARCHAR(500) DEFAULT ''");
   } finally { client.release(); }
 }
 
@@ -39,11 +40,11 @@ export default async function handler(req, res) {
       const client = await pool.connect();
       try {
         if (id && id > 0) {
-          const r = await client.query("SELECT id, title, content, created_at, updated_at FROM posts WHERE id = $1", [id]);
+          const r = await client.query("SELECT id, title, content, tags, created_at, updated_at FROM posts WHERE id = $1", [id]);
           if (r.rows.length === 0) return res.status(404).json({ error: "文章不存在" });
           return res.status(200).json({ post: r.rows[0] });
         }
-        const r = await client.query("SELECT id, title, LEFT(content, 200) AS excerpt, created_at FROM posts ORDER BY created_at DESC LIMIT 50");
+        const r = await client.query("SELECT id, title, LEFT(content, 200) AS excerpt, tags, created_at FROM posts ORDER BY created_at DESC LIMIT 50");
         return res.status(200).json({ posts: r.rows });
       } finally { client.release(); }
     }
@@ -53,15 +54,16 @@ export default async function handler(req, res) {
 
     // POST：创建文章
     if (req.method === "POST") {
-      const { title, content } = req.body || {};
+      const { title, content, tags } = req.body || {};
       if (!title || !content) return res.status(400).json({ error: "请填写标题和内容" });
       const tt = title.trim().slice(0, 200), tc = content.trim();
+      const tg = (tags || '').trim().slice(0, 500);
       if (!tt || !tc) return res.status(400).json({ error: "内容不能为空" });
       const client = await pool.connect();
       try {
         const r = await client.query(
-          "INSERT INTO posts (title, content) VALUES ($1, $2) RETURNING id, title, content, created_at",
-          [tt, tc]
+          "INSERT INTO posts (title, content, tags) VALUES ($1, $2, $3) RETURNING id, title, content, tags, created_at",
+          [tt, tc, tg]
         );
         return res.status(201).json({ post: r.rows[0] });
       } finally { client.release(); }
@@ -69,17 +71,18 @@ export default async function handler(req, res) {
 
     // PUT：更新文章
     if (req.method === "PUT") {
-      const { id, title, content } = req.body || {};
+      const { id, title, content, tags } = req.body || {};
       const pid = parseInt(id, 10);
       if (!pid || pid < 1) return res.status(400).json({ error: "缺少文章 id" });
       if (!title || !content) return res.status(400).json({ error: "请填写标题和内容" });
       const tt = title.trim().slice(0, 200), tc = content.trim();
+      const tg = (tags || '').trim().slice(0, 500);
       if (!tt || !tc) return res.status(400).json({ error: "内容不能为空" });
       const client = await pool.connect();
       try {
         const r = await client.query(
-          "UPDATE posts SET title = $1, content = $2, updated_at = NOW() WHERE id = $3 RETURNING id, title, content, created_at, updated_at",
-          [tt, tc, pid]
+          "UPDATE posts SET title = $1, content = $2, tags = $3, updated_at = NOW() WHERE id = $4 RETURNING id, title, content, tags, created_at, updated_at",
+          [tt, tc, tg, pid]
         );
         if (r.rows.length === 0) return res.status(404).json({ error: "文章不存在" });
         return res.status(200).json({ post: r.rows[0] });
