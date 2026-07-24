@@ -139,20 +139,37 @@
 
       <!-- ==================== 图论生成器 ==================== -->
       <div class="tools-panel" id="panel-graph">
-        <div class="graph-input-row">
-          <div class="graph-input-col">
-            <label class="tool-label">节点数量</label>
-            <input type="number" id="graphNodeCount" class="form-input" value="5" min="1" max="26" style="width:100px">
+        <div class="graph-toolbar">
+          <div class="graph-input-row">
+            <div class="graph-input-col" style="flex:0 0 auto">
+              <label class="tool-label">节点</label>
+              <input type="number" id="graphNodeCount" class="form-input" value="6" min="1" max="26" style="width:70px">
+            </div>
+            <div class="graph-input-col" style="flex:0 0 auto">
+              <label class="tool-label">索引</label>
+              <select id="graphIndexMode" class="form-input" style="width:80px;padding:10px 8px">
+                <option value="1">1-index</option>
+                <option value="0">0-index</option>
+              </select>
+            </div>
+            <div class="graph-input-col" style="flex:0 0 auto">
+              <label class="tool-label">类型</label>
+              <select id="graphDirected" class="form-input" style="width:80px;padding:10px 8px">
+                <option value="1">有向</option>
+                <option value="0">无向</option>
+              </select>
+            </div>
+            <div class="graph-input-col" style="flex:1">
+              <label class="tool-label">边数据（每行：起点 终点 [权值]）</label>
+              <textarea id="graphEdgeInput" class="tool-textarea graph-edge-input" placeholder="1 2 5&#10;2 3 3&#10;1 3 8" rows="4"></textarea>
+            </div>
           </div>
-          <div class="graph-input-col" style="flex:1">
-            <label class="tool-label">边数据（每行一条：起点 终点 [权值]，如 1 2 5）</label>
-            <textarea id="graphEdgeInput" class="tool-textarea" placeholder="1 2 5&#10;2 3 3&#10;1 3 8" rows="4" style="font-family:'Consolas','Monaco',monospace"></textarea>
+          <div class="tool-actions">
+            <button class="btn btn-primary" id="graphBuildBtn">🔄 生成图</button>
+            <button class="btn-secondary btn-sm" id="graphExportBtn">📤 导出矩阵</button>
+            <button class="btn-secondary btn-sm" id="graphClearBtn">🗑 清空</button>
+            <span id="graphStats" style="font-size:0.82rem;color:#94A3B8;margin-left:8px"></span>
           </div>
-        </div>
-        <div class="tool-actions">
-          <button class="btn btn-primary" id="graphBuildBtn">生成图</button>
-          <button class="btn-secondary btn-sm" id="graphExportBtn">📤 导出邻接矩阵</button>
-          <button class="btn-secondary btn-sm" id="graphClearBtn">🗑 清空</button>
         </div>
         <div id="graphHint" class="form-feedback" style="display:none"></div>
         <div class="graph-canvas-wrap">
