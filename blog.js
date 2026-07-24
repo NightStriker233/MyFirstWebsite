@@ -3,7 +3,16 @@ const COMMENTS_API = '/api/blog-comments';
 const BLOG_REPLIES_API = '/api/blog-replies';
 
 // 配置 marked
-marked.setOptions({ breaks: true, gfm: true });
+marked.setOptions({
+  breaks: true,
+  gfm: true,
+  highlight: function(code, lang) {
+    if (lang && hljs.getLanguage(lang)) {
+      try { return hljs.highlight(code, { language: lang }).value; } catch(e) {}
+    }
+    return code;
+  }
+});
 
 // DOM 元素
 const listView = document.getElementById('listView');
@@ -177,6 +186,8 @@ async function loadPostDetail(id) {
       postFull.appendChild(btnRow);
       document.getElementById('editFromDetailBtn').addEventListener('click', () => openEditor(id));
     }
+    // 生成目录
+    generateTOC(postFull);
     // 加载评论
     currentPostId = id;
     loadComments(id);
@@ -482,6 +493,23 @@ function getAvatar(name) {
   const idx = (name || '?').charCodeAt(0) % colors.length;
   const letter = (name || '?')[0].toUpperCase();
   return '<span class="avatar-badge" style="background:' + colors[idx] + '">' + letter + '</span>';
+}
+
+// ---- 文章目录生成 ----
+function generateTOC(container) {
+  const tocEl = document.getElementById('postToc');
+  const tocNav = document.getElementById('tocNav');
+  const headings = container.querySelectorAll('h1, h2, h3');
+  if (headings.length < 2) { tocEl.style.display = 'none'; return; }
+  let html = '';
+  headings.forEach((h, i) => {
+    const id = 'heading-' + i;
+    h.id = id;
+    const level = parseInt(h.tagName[1]);
+    html += '<a href="#' + id + '" class="toc-link toc-l' + level + '">' + h.textContent + '</a>';
+  });
+  tocNav.innerHTML = html;
+  tocEl.style.display = 'block';
 }
 
 // 绑定评论提交事件
