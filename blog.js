@@ -82,16 +82,55 @@ function showDetail() {
 }
 
 // ---- 加载文章列表 ----
+let allPosts = [];
+
 async function loadPosts() {
   try {
     const res = await fetch(POSTS_API);
     if (!res.ok) throw new Error('加载失败');
     const data = await res.json();
-    const posts = data.posts || [];
-    if (posts.length === 0) {
-      postsList.innerHTML = '<div class="blog-empty"><div style="font-size:3rem;margin-bottom:12px">📭</div><p>还没有文章，点击「写文章」开始吧！</p></div>';
-      return;
-    }
+    allPosts = data.posts || [];
+    renderTagCloud(allPosts);
+    filterAndRender();
+  } catch (err) {
+    postsList.innerHTML = '<div class="blog-empty" style="color:#DC2626">⚠️ 文章加载失败：' + err.message + '</div>';
+  }
+}
+
+function filterAndRender() {
+  const query = document.getElementById('blogSearch').value.trim().toLowerCase();
+  const posts = allPosts.filter(p => {
+    if (!query) return true;
+    return p.title.toLowerCase().includes(query) || (p.tags || '').toLowerCase().includes(query);
+  });
+  renderPosts(posts);
+}
+
+document.getElementById('blogSearch').addEventListener('input', filterAndRender);
+
+function renderTagCloud(posts) {
+  const tagCount = {};
+  posts.forEach(p => {
+    if (!p.tags) return;
+    p.tags.split(',').forEach(t => { const k = t.trim(); if (k) tagCount[k] = (tagCount[k] || 0) + 1; });
+  });
+  const tags = Object.entries(tagCount).sort((a, b) => b[1] - a[1]);
+  document.getElementById('blogTags').innerHTML = tags.length > 0
+    ? '<span style="font-size:0.8rem;color:#94A3B8;margin-right:8px">标签：</span>' + tags.map(([t, c]) => '<span class="blog-tag-pill" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + ' (' + c + ')</span>').join('')
+    : '';
+  document.querySelectorAll('.blog-tag-pill').forEach(el => {
+    el.addEventListener('click', () => {
+      document.getElementById('blogSearch').value = el.dataset.tag;
+      filterAndRender();
+    });
+  });
+}
+
+function renderPosts(posts) {
+  if (posts.length === 0) {
+    postsList.innerHTML = '<div class="blog-empty"><div style="font-size:3rem;margin-bottom:12px">📭</div><p>没有匹配的文章</p></div>';
+    return;
+  }
     postsList.innerHTML = posts.map(p => `
       <div class="blog-post-card" data-post-id="${p.id}">
         <h2 class="blog-post-title">${escapeHtml(p.title)}</h2>
@@ -186,6 +225,7 @@ function showPasswordOverlay(callback) {
 function openEditor(postId) {
   editingPostId = postId || null;
   const titleInput = document.getElementById('postTitleInput');
+  const tagsInput = document.getElementById('postTagsInput');
   const contentInput = document.getElementById('postContentInput');
   const editorTitle = document.getElementById('editorTitle');
   const deleteBtn = document.getElementById('deletePostBtn');
@@ -193,6 +233,7 @@ function openEditor(postId) {
   const livePreview = document.getElementById('livePreview');
 
   titleInput.value = '';
+  tagsInput.value = '';
   contentInput.value = '';
   feedback.style.display = 'none';
   livePreview.innerHTML = '<p style="color:#94A3B8">在左侧输入内容，这里实时预览……</p>';
@@ -215,6 +256,7 @@ function openEditor(postId) {
       .then(r => r.json())
       .then(data => {
         titleInput.value = data.post.title;
+        tagsInput.value = data.post.tags || '';
         contentInput.value = data.post.content;
       });
   } else {
@@ -227,6 +269,7 @@ function openEditor(postId) {
 // ---- 保存文章 ----
 async function savePost() {
   const title = document.getElementById('postTitleInput').value.trim();
+  const tags = document.getElementById('postTagsInput').value.trim();
   const content = document.getElementById('postContentInput').value.trim();
   const feedback = document.getElementById('editorFeedback');
   if (!title || !content) {
@@ -245,13 +288,13 @@ async function savePost() {
       res = await fetch(POSTS_API, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: editingPostId, title, content, password: authPassword })
+        body: JSON.stringify({ id: editingPostId, title, content, tags, password: authPassword })
       });
     } else {
       res = await fetch(POSTS_API, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, content, password: authPassword })
+        body: JSON.stringify({ title, content, tags, password: authPassword })
       });
     }
     const data = await res.json();
