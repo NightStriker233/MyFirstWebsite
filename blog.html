@@ -34,6 +34,7 @@
         <a href="index.html#messages">留言板</a>
         <a href="blog.html" style="color:#1E293B">博客</a>
         <a href="tools.html">工具箱</a>
+        <a href="games.html">游戏</a>
       </div>
     </div>
   </nav>
@@ -46,8 +47,12 @@
       <div id="listView">
         <div class="blog-header">
           <h1>📝 博客</h1>
-          <button class="btn-secondary" id="showEditorBtn">✏️ 写文章</button>
+          <div style="display:flex;gap:10px;align-items:center">
+            <input type="text" id="blogSearch" class="form-input" placeholder="🔍 搜索标题或标签……" style="width:200px;padding:8px 12px;font-size:0.85rem">
+            <button class="btn-secondary" id="showEditorBtn">✏️ 写文章</button>
+          </div>
         </div>
+        <div class="blog-tags" id="blogTags"></div>
         <div class="blog-posts-list" id="postsList">
           <div class="loading-state">
             <div class="loading-spinner"></div>
@@ -63,6 +68,9 @@
           <h3 id="editorTitle">写新文章</h3>
           <div class="form-group">
             <input type="text" id="postTitleInput" class="form-input" placeholder="文章标题" maxlength="200">
+          </div>
+          <div class="form-group">
+            <input type="text" id="postTagsInput" class="form-input" placeholder="标签（逗号分隔，如 OI,题解,DP）" maxlength="500">
           </div>
           <div class="editor-workspace">
             <div class="editor-pane">
@@ -107,5 +115,9 @@
   </div>
 
   <script src="blog.js"></script>
+  <script>
+    fetch('/api/stats',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:'/blog'})})
+      .then(r=>r.json()).then(d=>{var el=document.createElement('span');el.style.cssText='font-size:0.82rem;color:#94A3B8;display:block;text-align:center;padding:10px 0';el.textContent='🌐 '+d.total+' 次访问';document.querySelector('.blog-section').appendChild(el);}).catch(()=>{});
+  </script>
 </body>
 </html>
