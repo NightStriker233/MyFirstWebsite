@@ -960,3 +960,197 @@ body {
   padding: 80px 20px;
   color: #94A3B8;
 }
+
+/* ===== 编辑器分栏布局 ===== */
+.editor-workspace {
+  display: flex;
+  gap: 20px;
+  min-height: 400px;
+}
+
+.editor-pane,
+.preview-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pane-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #64748B;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.editor-textarea {
+  flex: 1;
+  resize: none;
+  min-height: 400px;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  tab-size: 4;
+}
+
+.preview-content {
+  flex: 1;
+  background: #fff;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 20px;
+  overflow-y: auto;
+  font-size: 0.95rem;
+  line-height: 1.8;
+  color: #334155;
+}
+
+/* ===== Markdown 渲染内容样式 ===== */
+.post-full-content h1,
+.post-full-content h2,
+.post-full-content h3,
+.preview-content h1,
+.preview-content h2,
+.preview-content h3 {
+  font-weight: 700;
+  color: #1E293B;
+  margin: 1.2em 0 0.6em;
+  line-height: 1.3;
+}
+
+.post-full-content h1,
+.preview-content h1 { font-size: 1.6rem; border-bottom: 2px solid #E2E8F0; padding-bottom: 8px; }
+
+.post-full-content h2,
+.preview-content h2 { font-size: 1.3rem; }
+
+.post-full-content h3,
+.preview-content h3 { font-size: 1.1rem; }
+
+.post-full-content p,
+.preview-content p {
+  margin: 0.6em 0;
+}
+
+.post-full-content ul,
+.post-full-content ol,
+.preview-content ul,
+.preview-content ol {
+  margin: 0.6em 0;
+  padding-left: 1.5em;
+}
+
+.post-full-content li,
+.preview-content li {
+  margin: 0.3em 0;
+}
+
+.post-full-content a,
+.preview-content a {
+  color: #4F46E5;
+  text-decoration: underline;
+}
+
+.post-full-content blockquote,
+.preview-content blockquote {
+  border-left: 3px solid #4F46E5;
+  margin: 1em 0;
+  padding: 8px 16px;
+  background: #EEF2FF;
+  border-radius: 0 8px 8px 0;
+  color: #475569;
+}
+
+.post-full-content blockquote p,
+.preview-content blockquote p {
+  margin: 0;
+}
+
+.post-full-content code,
+.preview-content code {
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 0.88em;
+  background: #F1F5F9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #E11D48;
+}
+
+.post-full-content pre,
+.preview-content pre {
+  background: #1E293B;
+  color: #E2E8F0;
+  padding: 16px 20px;
+  border-radius: 10px;
+  overflow-x: auto;
+  margin: 1em 0;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+.post-full-content pre code,
+.preview-content pre code {
+  background: none;
+  color: inherit;
+  padding: 0;
+  font-size: inherit;
+}
+
+.post-full-content table,
+.preview-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0;
+}
+
+.post-full-content th,
+.post-full-content td,
+.preview-content th,
+.preview-content td {
+  border: 1px solid #E2E8F0;
+  padding: 10px 14px;
+  text-align: left;
+}
+
+.post-full-content th,
+.preview-content th {
+  background: #F8FAFC;
+  font-weight: 600;
+}
+
+.post-full-content hr,
+.preview-content hr {
+  border: none;
+  border-top: 1px solid #E2E8F0;
+  margin: 1.5em 0;
+}
+
+.post-full-content img,
+.preview-content img {
+  max-width: 100%;
+  border-radius: 8px;
+}
+
+/* KaTeX 公式溢出处理 */
+.katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 0;
+}
+
+.katex-error {
+  color: #DC2626;
+  font-family: monospace;
+}
+
+/* 响应式：小屏幕编辑器堆叠 */
+@media (max-width: 768px) {
+  .editor-workspace {
+    flex-direction: column;
+  }
+  .editor-textarea {
+    min-height: 250px;
+  }
+}
