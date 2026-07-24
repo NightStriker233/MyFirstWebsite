@@ -143,21 +143,21 @@
           <div class="graph-input-row">
             <div class="graph-input-col" style="flex:0 0 auto">
               <label class="tool-label">节点</label>
-              <input type="number" id="graphNodeCount" class="form-input" value="6" min="1" max="26" style="width:70px">
+              <input type="number" id="graphNodeCount" class="form-input" value="" placeholder="自动" min="1" max="26" style="width:70px">
             </div>
             <div class="graph-input-col" style="flex:0 0 auto">
               <label class="tool-label">索引</label>
-              <select id="graphIndexMode" class="form-input" style="width:80px;padding:10px 8px">
-                <option value="1">1-index</option>
-                <option value="0">0-index</option>
-              </select>
+              <div class="toggle-group" id="graphIndexMode">
+                <button class="toggle-btn active" data-val="1">1-index</button>
+                <button class="toggle-btn" data-val="0">0-index</button>
+              </div>
             </div>
             <div class="graph-input-col" style="flex:0 0 auto">
               <label class="tool-label">类型</label>
-              <select id="graphDirected" class="form-input" style="width:80px;padding:10px 8px">
-                <option value="1">有向</option>
-                <option value="0">无向</option>
-              </select>
+              <div class="toggle-group" id="graphDirected">
+                <button class="toggle-btn active" data-val="1">有向</button>
+                <button class="toggle-btn" data-val="0">无向</button>
+              </div>
             </div>
             <div class="graph-input-col" style="flex:1">
               <label class="tool-label">边数据（每行：起点 终点 [权值]）</label>
@@ -165,8 +165,7 @@
             </div>
           </div>
           <div class="tool-actions">
-            <button class="btn btn-primary" id="graphBuildBtn">🔄 生成图</button>
-            <button class="btn-secondary btn-sm" id="graphExportBtn">📤 导出矩阵</button>
+            <button class="btn-primary btn-sm" id="graphExportBtn">📤 导出矩阵</button>
             <button class="btn-secondary btn-sm" id="graphClearBtn">🗑 清空</button>
             <span id="graphStats" style="font-size:0.82rem;color:#94A3B8;margin-left:8px"></span>
           </div>
