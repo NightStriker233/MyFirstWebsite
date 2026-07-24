@@ -99,58 +99,6 @@ document.querySelectorAll('.tools-tab').forEach(tab => {
   init();
 })();
 
-// ===================== 🕹 贪吃蛇 =====================
-(function () {
-  const CELL = 18, COLS = 25, ROWS = 22;
-  const canvas = document.getElementById('snakeCanvas'), ctx = canvas.getContext('2d');
-  const scoreEl = document.getElementById('snakeScore');
-  let snake, food, dir, nextDir, score, interval, running;
-
-  function init() {
-    snake = [{ x: 5, y: 10 }, { x: 4, y: 10 }, { x: 3, y: 10 }];
-    dir = { x: 1, y: 0 }; nextDir = { x: 1, y: 0 };
-    score = 0; running = true; clearInterval(interval);
-    scoreEl.textContent = '0';
-    canvas.width = COLS * CELL; canvas.height = ROWS * CELL;
-    placeFood();
-    interval = setInterval(tick, 100);
-    draw();
-  }
-
-  function placeFood() {
-    const occupied = new Set(snake.map(s => s.x + ',' + s.y));
-    do { food = { x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS) }; }
-    while (occupied.has(food.x + ',' + food.y));
-  }
-
-  function tick() {
-    if (!running) return;
-    dir = { ...nextDir };
-    const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
-    if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS || snake.some(s => s.x === head.x && s.y === head.y)) { running = false; clearInterval(interval); scoreEl.textContent = score + ' 💀'; draw(); return; }
-    snake.unshift(head);
-    if (head.x === food.x && head.y === food.y) { score += 10; scoreEl.textContent = score; placeFood(); }
-    else snake.pop();
-    draw();
-  }
-
-  function draw() {
-    ctx.fillStyle = '#1E293B'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-    snake.forEach((s, i) => { ctx.fillStyle = i === 0 ? '#4ADE80' : '#22C55E'; ctx.fillRect(s.x * CELL + 1, s.y * CELL + 1, CELL - 2, CELL - 2); });
-    ctx.fillStyle = '#EF4444'; ctx.beginPath(); ctx.arc(food.x * CELL + CELL / 2, food.y * CELL + CELL / 2, CELL / 2 - 2, 0, Math.PI * 2); ctx.fill();
-  }
-
-  document.addEventListener('keydown', e => {
-    if (e.key === 'ArrowUp' && dir.y !== 1) nextDir = { x: 0, y: -1 };
-    if (e.key === 'ArrowDown' && dir.y !== -1) nextDir = { x: 0, y: 1 };
-    if (e.key === 'ArrowLeft' && dir.x !== 1) nextDir = { x: -1, y: 0 };
-    if (e.key === 'ArrowRight' && dir.x !== -1) nextDir = { x: 1, y: 0 };
-  });
-
-  document.getElementById('snakeReset').addEventListener('click', init);
-  init();
-})();
-
 // ===================== 🔢 2048 =====================
 (function () {
   const boardEl = document.getElementById('tfeBoard'), scoreEl = document.getElementById('tfeScore');
