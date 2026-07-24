@@ -1843,3 +1843,98 @@ body {
   border-color: #E88D5A;
   box-shadow: 0 0 0 3px rgba(232,141,90,0.12);
 }
+
+/* ===== 文章目录 TOC ===== */
+.post-detail-layout {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+.post-toc {
+  position: sticky;
+  top: 80px;
+  background: #fff;
+  border: 1px solid #E8DFD5;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.toc-title {
+  font-family: 'Noto Serif SC', Georgia, serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1E293B;
+  margin-bottom: 10px;
+}
+
+.toc-nav { display: flex; flex-direction: column; gap: 4px; }
+
+.toc-link {
+  font-size: 0.8rem;
+  color: #64748B;
+  text-decoration: none;
+  padding: 3px 0 3px 0;
+  border-left: 2px solid transparent;
+  padding-left: 8px;
+  transition: all 0.15s;
+  line-height: 1.4;
+}
+
+.toc-l1 { font-weight: 600; }
+.toc-l2 { padding-left: 16px; }
+.toc-l3 { padding-left: 24px; font-size: 0.75rem; }
+
+.toc-link:hover { color: #E88D5A; border-left-color: #E88D5A; }
+
+@media (max-width: 768px) {
+  .post-detail-layout { grid-template-columns: 1fr; }
+  .post-toc { position: static; margin-bottom: 20px; }
+}
+
+/* ===== AtCoder 卡片 ===== */
+.atcoder-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 18px;
+  padding: 10px 16px;
+  background: #fff;
+  border: 1px solid #E8DFD5;
+  border-radius: 20px;
+  max-width: 280px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.atcoder-label {
+  font-size: 0.78rem;
+  color: #94A3B8;
+  font-weight: 500;
+}
+
+.atcoder-rating {
+  font-size: 1.2rem;
+  font-weight: 800;
+  font-family: 'Inter', sans-serif;
+}
+
+.atcoder-rank {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+/* ===== 随机一言 ===== */
+.hero-quote {
+  margin-top: 12px;
+  font-size: 0.9rem;
+  color: #94A3B8;
+  font-style: italic;
+  font-family: 'Noto Serif SC', Georgia, serif;
+  min-height: 1.4em;
+}
