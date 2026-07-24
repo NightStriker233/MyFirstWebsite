@@ -1349,8 +1349,31 @@ body {
   margin-top: 16px;
 }
 
+.graph-input-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.graph-input-col {
+  display: flex;
+  flex-direction: column;
+}
+
 /* ---- 代码运行器 ---- */
 .runner-config { margin-bottom: 12px; }
+
+.runner-notice {
+  background: #FEFCE8;
+  border: 1px solid #FDE68A;
+  color: #92400E;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  margin-bottom: 14px;
+}
 
 .runner-grid {
   display: grid;
