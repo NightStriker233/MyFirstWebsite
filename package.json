@@ -1,5 +1,6 @@
 {
   "name": "my-first-website",
-  "version": "1.0.0",
-  "description": "我的个人网站 - 留言板"
+  "version": "2.0.0",
+  "description": "NightStriker 个人网站 - 留言板 + 博客",
+  "type": "module"
 }
