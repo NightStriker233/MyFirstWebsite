@@ -1362,7 +1362,12 @@ body {
 }
 
 /* ---- 代码运行器 ---- */
-.runner-config { margin-bottom: 12px; }
+.runner-topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
 
 .runner-notice {
   background: #FEFCE8;
@@ -1375,17 +1380,34 @@ body {
   margin-bottom: 14px;
 }
 
-.runner-grid {
+.runner-main {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1.4fr 1fr;
   gap: 20px;
-  margin-bottom: 12px;
+  min-height: 420px;
 }
 
-.runner-code {
-  min-height: 280px;
+.runner-editor-wrap {
+  border: 1.5px solid #E8E4E0;
+  border-radius: 8px;
+  overflow: hidden;
+  min-height: 420px;
+}
+
+.runner-editor {
+  height: 100%;
+}
+
+.runner-editor .CodeMirror {
+  height: 100% !important;
+  font-size: 0.9rem;
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-  tab-size: 4;
+}
+
+.runner-io {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .runner-output {
@@ -1399,6 +1421,7 @@ body {
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 0.85rem;
   line-height: 1.6;
+  flex: 1;
 }
 
 .runner-output p { margin: 0; }
@@ -1435,12 +1458,12 @@ body {
 
 .runner-ok { color: #4ADE80; }
 .runner-ce { color: #FBBF24; }
-.runner-re { color: #F87171; }
 .runner-tle { color: #FB923C; }
 
 @media (max-width: 768px) {
   .tool-grid,
-  .runner-grid { grid-template-columns: 1fr; }
+  .runner-main { grid-template-columns: 1fr; }
+  .runner-editor-wrap { min-height: 300px; }
   .random-row { grid-template-columns: 1fr 1fr; }
   .tools-tabs { gap: 2px; }
   .tools-tab { padding: 8px 12px; font-size: 0.78rem; }
