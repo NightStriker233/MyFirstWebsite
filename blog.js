@@ -12,8 +12,13 @@ const passwordOverlay = document.getElementById('passwordOverlay');
 const passwordInput = document.getElementById('passwordInput');
 const passwordError = document.getElementById('passwordError');
 
-let authPassword = '';
+let authPassword = localStorage.getItem('blog_key') || '';
 let editingPostId = null; // null = 新建, number = 编辑
+
+// 如果已保存 key，自动写入供 API 使用
+if (authPassword) {
+  console.log('🔗 管理链接已激活');
+}
 
 // ---- Markdown + LaTeX 渲染 ----
 function renderContent(text) {
@@ -288,6 +293,10 @@ async function deletePost() {
 
 // ---- 事件绑定 ----
 document.getElementById('showEditorBtn').addEventListener('click', () => {
+  if (authPassword) {
+    openEditor(null);
+    return;
+  }
   showPasswordOverlay(pw => {
     authPassword = pw;
     openEditor(null);
