@@ -6,6 +6,7 @@ const form = document.getElementById('messageForm');
 const nameInput = document.getElementById('nameInput');
 const contentInput = document.getElementById('contentInput');
 const submitBtn = document.getElementById('submitBtn');
+const anonymousCheck = document.getElementById('anonymousCheck');
 const messagesList = document.getElementById('messagesList');
 const formFeedback = document.getElementById('formFeedback');
 const charCount = document.getElementById('charCount');
@@ -241,10 +242,24 @@ async function refreshReplyCount(msgId) {
   } catch { /* ignore */ }
 }
 
+// ---- 匿名复选框 ----
+anonymousCheck.addEventListener('change', () => {
+  if (anonymousCheck.checked) {
+    nameInput.value = '匿名';
+    nameInput.disabled = true;
+    nameInput.style.opacity = '0.5';
+  } else {
+    nameInput.value = '';
+    nameInput.disabled = false;
+    nameInput.style.opacity = '1';
+    nameInput.focus();
+  }
+});
+
 // ---- 提交主留言 ----
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const name = nameInput.value.trim();
+  const name = anonymousCheck.checked ? '匿名' : nameInput.value.trim();
   const content = contentInput.value.trim();
   if (!name || !content) {
     showFeedback('请填写名字和留言内容', 'error');
@@ -263,6 +278,11 @@ form.addEventListener('submit', async (e) => {
     showFeedback('留言提交成功！🎉', 'success');
     form.reset();
     charCount.textContent = '0';
+    if (anonymousCheck.checked) {
+      anonymousCheck.checked = false;
+      nameInput.disabled = false;
+      nameInput.style.opacity = '1';
+    }
     await loadMessages();
   } catch (err) {
     showFeedback(err.message || '提交失败，请稍后再试', 'error');
