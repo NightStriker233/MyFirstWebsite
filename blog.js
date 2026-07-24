@@ -134,7 +134,7 @@ function renderPosts(posts) {
     postsList.innerHTML = posts.map(p => `
       <div class="blog-post-card" data-post-id="${p.id}">
         <h2 class="blog-post-title">${escapeHtml(p.title)}</h2>
-        <div class="blog-post-meta">${formatDate(p.created_at)}</div>
+        <div class="blog-post-meta">${formatDate(p.created_at)}${p.tags ? ' · ' + p.tags.split(',').map(t => '<span class="blog-tag-sm">' + escapeHtml(t.trim()) + '</span>').join(' ') : ''}</div>
         <p class="blog-post-excerpt">${escapeHtml(stripMarkdown(p.excerpt || ''))}</p>
         <div class="blog-post-actions" style="display:none">
           <button class="btn-secondary btn-sm edit-post-btn" data-id="${p.id}">编辑</button>
@@ -145,15 +145,12 @@ function renderPosts(posts) {
     // 点击卡片查看详情
     postsList.querySelectorAll('.blog-post-card').forEach(card => {
       card.addEventListener('click', (e) => {
-        if (e.target.closest('button')) return;
+        if (e.target.closest('button') || e.target.closest('.blog-tag-sm')) return;
         const id = parseInt(card.dataset.postId, 10);
         loadPostDetail(id);
       });
     });
-  } catch (err) {
-    postsList.innerHTML = '<div class="blog-empty" style="color:#DC2626">⚠️ 文章加载失败：' + err.message + '</div>';
   }
-}
 
 // ---- 加载单篇文章详情 ----
 async function loadPostDetail(id) {
