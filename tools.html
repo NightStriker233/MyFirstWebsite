@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>工具箱 - NightStriker</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="container nav-container">
+      <a href="index.html" class="nav-logo">✦ NightStriker</a>
+      <div class="nav-links">
+        <a href="index.html#about">关于我</a>
+        <a href="index.html#messages">留言板</a>
+        <a href="blog.html">博客</a>
+        <a href="tools.html" style="color:#1E293B;font-weight:700">工具箱</a>
+      </div>
+    </div>
+  </nav>
+
+  <section class="tools-section">
+    <div class="container">
+      <h1 class="tools-title">🧰 工具箱</h1>
+
+      <!-- Tab 导航 -->
+      <div class="tools-tabs" id="tabsNav">
+        <button class="tools-tab active" data-tab="base64">🔐 Base64</button>
+        <button class="tools-tab" data-tab="diff">🔍 Diff</button>
+        <button class="tools-tab" data-tab="random">🎲 随机数</button>
+        <button class="tools-tab" data-tab="clips">📋 剪切板</button>
+        <button class="tools-tab" data-tab="graph">🕸 图论</button>
+        <button class="tools-tab" data-tab="runner">▶ 代码运行</button>
+      </div>
+
+      <!-- ==================== Base64 ==================== -->
+      <div class="tools-panel active" id="panel-base64">
+        <div class="tool-grid">
+          <div class="tool-col">
+            <label class="tool-label">明文</label>
+            <textarea id="base64Input" class="tool-textarea" placeholder="输入要编码的文本……" rows="6"></textarea>
+          </div>
+          <div class="tool-col">
+            <label class="tool-label">Base64</label>
+            <textarea id="base64Output" class="tool-textarea" placeholder="输入要解码的 Base64……" rows="6"></textarea>
+          </div>
+        </div>
+        <div class="tool-actions">
+          <button class="btn btn-primary" id="base64EncodeBtn">明文 → Base64</button>
+          <button class="btn-secondary" id="base64DecodeBtn">Base64 → 明文</button>
+          <button class="btn-secondary btn-sm" id="base64CopyBtn">📋 复制结果</button>
+        </div>
+        <div id="base64Feedback" class="form-feedback" style="display:none"></div>
+      </div>
+
+      <!-- ==================== Diff ==================== -->
+      <div class="tools-panel" id="panel-diff">
+        <div class="tool-grid">
+          <div class="tool-col">
+            <label class="tool-label">原始文本</label>
+            <textarea id="diffOld" class="tool-textarea" placeholder="粘贴原始文本……" rows="8"></textarea>
+          </div>
+          <div class="tool-col">
+            <label class="tool-label">新文本</label>
+            <textarea id="diffNew" class="tool-textarea" placeholder="粘贴新文本……" rows="8"></textarea>
+          </div>
+        </div>
+        <div class="tool-actions">
+          <button class="btn btn-primary" id="diffBtn">对比差异</button>
+          <button class="btn-secondary btn-sm" id="diffClearBtn">清空</button>
+        </div>
+        <div class="diff-output" id="diffOutput" style="display:none"></div>
+      </div>
+
+      <!-- ==================== 随机数 ==================== -->
+      <div class="tools-panel" id="panel-random">
+        <div class="random-form">
+          <div class="random-row">
+            <div class="random-field">
+              <label class="tool-label">最小值</label>
+              <input type="number" id="randMin" class="form-input" value="1">
+            </div>
+            <div class="random-field">
+              <label class="tool-label">最大值</label>
+              <input type="number" id="randMax" class="form-input" value="100">
+            </div>
+            <div class="random-field">
+              <label class="tool-label">生成个数</label>
+              <input type="number" id="randCount" class="form-input" value="10" min="1" max="10000">
+            </div>
+            <div class="random-field">
+              <label class="tool-label">小数位数</label>
+              <input type="number" id="randDecimals" class="form-input" value="0" min="0" max="10">
+            </div>
+          </div>
+          <div class="random-checks">
+            <label><input type="checkbox" id="randUnique"> 去重</label>
+            <label><input type="checkbox" id="randSort"> 排序</label>
+          </div>
+          <div class="tool-actions">
+            <button class="btn btn-primary" id="randBtn">生成</button>
+            <button class="btn-secondary btn-sm" id="randCopyBtn">📋 复制</button>
+          </div>
+          <textarea id="randOutput" class="tool-textarea" rows="4" readonly placeholder="结果将显示在这里……"></textarea>
+        </div>
+      </div>
+
+      <!-- ==================== 剪切板分享 ==================== -->
+      <div class="tools-panel" id="panel-clips">
+        <div class="clips-create">
+          <label class="tool-label">粘贴你要分享的文本</label>
+          <textarea id="clipsContent" class="tool-textarea" placeholder="支持代码、笔记、日志……最大 50KB" rows="6"></textarea>
+          <div class="clips-options">
+            <label><input type="checkbox" id="clipsBurn"> 阅后即焚（查看一次后自动删除）</label>
+            <label>有效期：
+              <select id="clipsExpire" class="form-input" style="width:auto;display:inline-block;padding:6px 12px">
+                <option value="0">永不过期</option>
+                <option value="1">1 小时</option>
+                <option value="24">24 小时</option>
+                <option value="168">7 天</option>
+              </select>
+            </label>
+          </div>
+          <div class="tool-actions">
+            <button class="btn btn-primary" id="clipsCreateBtn">生成分享链接</button>
+          </div>
+          <div id="clipsResult" class="clips-result" style="display:none"></div>
+          <div id="clipsFeedback" class="form-feedback" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- ==================== 图论生成器 ==================== -->
+      <div class="tools-panel" id="panel-graph">
+        <div class="graph-toolbar">
+          <button class="btn-secondary btn-sm" id="graphAddNode">➕ 添加节点</button>
+          <button class="btn-secondary btn-sm" id="graphAddEdge">🔗 连边模式</button>
+          <button class="btn-secondary btn-sm" id="graphClear">🗑 清空</button>
+          <button class="btn-primary btn-sm" id="graphExport">📤 导出邻接矩阵</button>
+          <span class="graph-mode-hint" id="graphHint">点击空白添加节点</span>
+        </div>
+        <div class="graph-canvas-wrap">
+          <svg id="graphSvg" class="graph-svg"></svg>
+        </div>
+        <div class="graph-export" id="graphExportPanel" style="display:none">
+          <label class="tool-label">邻接矩阵 / 边列表</label>
+          <textarea id="graphExportText" class="tool-textarea" rows="6" readonly></textarea>
+          <button class="btn-secondary btn-sm" id="graphCopyBtn">📋 复制</button>
+        </div>
+      </div>
+
+      <!-- ==================== 在线代码运行器 ==================== -->
+      <div class="tools-panel" id="panel-runner">
+        <div class="runner-config">
+          <select id="runnerLang" class="form-input" style="width:auto">
+            <option value="cpp">C++ (gcc 10.2)</option>
+            <option value="python">Python 3.10</option>
+          </select>
+        </div>
+        <div class="runner-grid">
+          <div class="runner-col">
+            <label class="tool-label">源代码</label>
+            <textarea id="runnerCode" class="tool-textarea runner-code" placeholder="// 在此输入代码……" rows="12" spellcheck="false"></textarea>
+          </div>
+          <div class="runner-col">
+            <label class="tool-label">测试输入（每组用 === 分隔）</label>
+            <textarea id="runnerInput" class="tool-textarea" placeholder="输入数据……&#10;===&#10;第二组输入……" rows="6"></textarea>
+            <label class="tool-label">输出结果</label>
+            <div class="runner-output" id="runnerOutput">
+              <p style="color:#94A3B8">点击运行查看结果……</p>
+            </div>
+          </div>
+        </div>
+        <div class="tool-actions">
+          <button class="btn btn-primary" id="runnerBtn">▶ 运行代码</button>
+          <span id="runnerStatus" style="font-size:0.85rem;color:#94A3B8;margin-left:12px"></span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <script src="tools.js"></script>
+</body>
+</html>
