@@ -163,6 +163,7 @@ document.querySelectorAll('.tools-tab').forEach(tab => {
 (function () {
   const svg = document.getElementById('graphSvg');
   const hint = document.getElementById('graphHint');
+  const stats = document.getElementById('graphStats');
 
   function showHint(msg, type) {
     hint.textContent = msg; hint.className = 'form-feedback ' + (type || '');
@@ -170,11 +171,12 @@ document.querySelectorAll('.tools-tab').forEach(tab => {
   }
 
   function buildGraph() {
-    const n = parseInt(document.getElementById('graphNodeCount').value) || 5;
+    const n = parseInt(document.getElementById('graphNodeCount').value) || 6;
     const raw = document.getElementById('graphEdgeInput').value.trim();
+    const idxMode = parseInt(document.getElementById('graphIndexMode').value); // 0 or 1
+    const directed = document.getElementById('graphDirected').value === '1';
     if (n < 1 || n > 26) { showHint('节点数量需在 1~26 之间', 'error'); return; }
 
-    // 解析边
     const edges = [];
     if (raw) {
       const lines = raw.split('\n');
@@ -183,21 +185,23 @@ document.querySelectorAll('.tools-tab').forEach(tab => {
         if (parts.length < 2) continue;
         const from = parseInt(parts[0]), to = parseInt(parts[1]);
         if (isNaN(from) || isNaN(to)) continue;
-        if (from < 1 || from > n || to < 1 || to > n) { showHint('节点编号超出范围：' + line, 'error'); return; }
+        const minV = idxMode, maxV = n + idxMode - 1;
+        if (from < minV || from > maxV || to < minV || to > maxV) { showHint('节点编号超出范围：' + line, 'error'); return; }
         const weight = parts.length >= 3 ? parseFloat(parts[2]) : null;
         edges.push({ from, to, weight: isNaN(weight) ? null : weight });
       }
     }
 
-    renderGraph(n, edges);
+    stats.textContent = n + ' 节点 · ' + edges.length + ' 条边 · ' + (directed ? '有向' : '无向');
+    renderGraph(n, edges, idxMode, directed);
   }
 
-  function renderGraph(n, edges) {
-    // 圆形布局
-    const size = svg.clientWidth || 680;
+  function renderGraph(n, edges, idxMode, directed) {
+    const size = Math.max(520, Math.min(700, svg.clientWidth || 600));
     const cx = size / 2, cy = size / 2;
-    const r = Math.min(size / 2 - 50, 260);
-    const nodeR = 20;
+    const nodeR = 24;
+    const margin = nodeR + 20;
+    const r = Math.min(size / 2 - margin, 240);
 
     const positions = [];
     for (let i = 0; i < n; i++) {
@@ -206,45 +210,70 @@ document.querySelectorAll('.tools-tab').forEach(tab => {
     }
 
     svg.setAttribute('viewBox', '0 0 ' + size + ' ' + size);
-    svg.style.height = Math.min(420, size) + 'px';
+    svg.style.height = Math.min(500, size) + 'px';
     svg.innerHTML = '';
 
+    // 网格背景点
+    const bg = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    for (let gx = 20; gx < size; gx += 25) {
+      for (let gy = 20; gy < size; gy += 25) {
+        const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        dot.setAttribute('cx', gx); dot.setAttribute('cy', gy);
+        dot.setAttribute('r', '1'); dot.setAttribute('fill', '#E0DCD7');
+        bg.appendChild(dot);
+      }
+    }
+    svg.appendChild(bg);
+
     // defs: arrowhead
-    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-    const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
-    marker.setAttribute('id', 'arrowhead');
-    marker.setAttribute('markerWidth', '10'); marker.setAttribute('markerHeight', '7');
-    marker.setAttribute('refX', '10'); marker.setAttribute('refY', '3.5');
-    marker.setAttribute('orient', 'auto');
-    const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-    poly.setAttribute('points', '0 0, 10 3.5, 0 7');
-    poly.setAttribute('fill', '#C4B5A5');
-    marker.appendChild(poly);
-    defs.appendChild(marker);
-    svg.appendChild(defs);
+    if (directed) {
+      const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+      const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+      marker.setAttribute('id', 'arrowhead');
+      marker.setAttribute('markerWidth', '12'); marker.setAttribute('markerHeight', '8');
+      marker.setAttribute('refX', '10'); marker.setAttribute('refY', '4');
+      marker.setAttribute('orient', 'auto');
+      const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+      poly.setAttribute('points', '0 0, 12 4, 0 8');
+      poly.setAttribute('fill', '#94A3B8');
+      marker.appendChild(poly);
+      defs.appendChild(marker);
+      svg.appendChild(defs);
+    }
 
     // 画边
+    const drawnEdges = new Set();
     edges.forEach(e => {
-      const from = positions[e.from - 1], to = positions[e.to - 1];
+      const fi = e.from - idxMode, ti = e.to - idxMode;
+      const from = positions[fi], to = positions[ti];
       if (!from || !to) return;
+
+      // 无向图：去重（只画一条）
+      if (!directed) {
+        const key = Math.min(fi, ti) + '_' + Math.max(fi, ti);
+        if (drawnEdges.has(key)) return;
+        drawnEdges.add(key);
+      }
+
       const dx = to.x - from.x, dy = to.y - from.y;
       const len = Math.sqrt(dx * dx + dy * dy) || 1;
       const ux = dx / len, uy = dy / len;
 
       // 自环
-      if (e.from === e.to) {
+      if (fi === ti) {
         const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         const sx = from.x, sy = from.y;
-        path.setAttribute('d', 'M ' + (sx + nodeR) + ' ' + sy + ' C ' + (sx + 40) + ' ' + (sy - 30) + ' ' + (sx) + ' ' + (sy - 30) + ' ' + (sx - nodeR) + ' ' + sy);
-        path.setAttribute('stroke', '#C4B5A5'); path.setAttribute('stroke-width', '2');
-        path.setAttribute('fill', 'none'); path.setAttribute('marker-end', 'url(#arrowhead)');
+        path.setAttribute('d', 'M ' + (sx + nodeR) + ' ' + sy + ' C ' + (sx + 50) + ' ' + (sy - 36) + ' ' + (sx) + ' ' + (sy - 36) + ' ' + (sx - nodeR) + ' ' + sy);
+        path.setAttribute('stroke', '#94A3B8'); path.setAttribute('stroke-width', '2.5');
+        path.setAttribute('fill', 'none');
+        if (directed) path.setAttribute('marker-end', 'url(#arrowhead)');
         g.appendChild(path);
-        if (e.weight !== null && e.weight !== undefined) {
+        if (e.weight !== null) {
           const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-          text.setAttribute('x', sx + 30); text.setAttribute('y', sy - 38);
+          text.setAttribute('x', sx + 38); text.setAttribute('y', sy - 44);
           text.setAttribute('text-anchor', 'middle'); text.setAttribute('fill', '#E11D48');
-          text.setAttribute('font-size', '13'); text.setAttribute('font-weight', '600');
+          text.setAttribute('font-size', '14'); text.setAttribute('font-weight', '700');
           text.textContent = e.weight; g.appendChild(text);
         }
         svg.appendChild(g);
@@ -252,22 +281,38 @@ document.querySelectorAll('.tools-tab').forEach(tab => {
       }
 
       const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-      const ex = to.x - ux * (nodeR + 4), ey = to.y - uy * (nodeR + 4);
-      const sx = from.x + ux * (nodeR + 4), sy = from.y + uy * (nodeR + 4);
+      const ex = to.x - ux * (nodeR + 5), ey = to.y - uy * (nodeR + 5);
+      const sx = from.x + ux * (nodeR + 5), sy = from.y + uy * (nodeR + 5);
+
+      // 粗透明线（增加视觉层次）
+      const lineWide = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      lineWide.setAttribute('x1', sx); lineWide.setAttribute('y1', sy);
+      lineWide.setAttribute('x2', ex); lineWide.setAttribute('y2', ey);
+      lineWide.setAttribute('stroke', '#CBD5E1'); lineWide.setAttribute('stroke-width', '4');
+      lineWide.setAttribute('opacity', '0.5');
+      g.appendChild(lineWide);
 
       const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
       line.setAttribute('x1', sx); line.setAttribute('y1', sy);
       line.setAttribute('x2', ex); line.setAttribute('y2', ey);
-      line.setAttribute('stroke', '#C4B5A5'); line.setAttribute('stroke-width', '2');
-      line.setAttribute('marker-end', 'url(#arrowhead)');
+      line.setAttribute('stroke', '#64748B'); line.setAttribute('stroke-width', '2.5');
+      if (directed) line.setAttribute('marker-end', 'url(#arrowhead)');
       g.appendChild(line);
 
-      if (e.weight !== null && e.weight !== undefined) {
+      // 边权标签（带白色背景框）
+      if (e.weight !== null) {
+        const mx = (sx + ex) / 2, my = (sy + ey) / 2 - 6;
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        const w = ('' + e.weight).length * 9 + 8;
+        rect.setAttribute('x', mx - w / 2); rect.setAttribute('y', my - 14);
+        rect.setAttribute('width', w); rect.setAttribute('height', '20');
+        rect.setAttribute('rx', '4'); rect.setAttribute('fill', '#fff');
+        rect.setAttribute('stroke', '#FECDD3'); rect.setAttribute('stroke-width', '1');
+        g.appendChild(rect);
         const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        const mx = (sx + ex) / 2, my = (sy + ey) / 2;
-        text.setAttribute('x', mx); text.setAttribute('y', my - 10);
+        text.setAttribute('x', mx); text.setAttribute('y', my + 1);
         text.setAttribute('text-anchor', 'middle'); text.setAttribute('fill', '#E11D48');
-        text.setAttribute('font-size', '13'); text.setAttribute('font-weight', '600');
+        text.setAttribute('font-size', '14'); text.setAttribute('font-weight', '700');
         text.textContent = e.weight; g.appendChild(text);
       }
       svg.appendChild(g);
@@ -275,16 +320,25 @@ document.querySelectorAll('.tools-tab').forEach(tab => {
 
     // 画节点
     positions.forEach((pos, i) => {
+      const label = '' + (i + idxMode);
       const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
       g.setAttribute('transform', 'translate(' + pos.x + ',' + pos.y + ')');
+
+      // 外圈阴影
+      const shadow = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      shadow.setAttribute('r', nodeR + 2); shadow.setAttribute('fill', 'rgba(0,0,0,0.06)');
+      g.appendChild(shadow);
+
       const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      circle.setAttribute('r', nodeR); circle.setAttribute('fill', '#1E293B');
+      circle.setAttribute('r', nodeR); circle.setAttribute('fill', '#fff');
+      circle.setAttribute('stroke', '#475569'); circle.setAttribute('stroke-width', '2.5');
       g.appendChild(circle);
+
       const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       text.setAttribute('text-anchor', 'middle'); text.setAttribute('dy', '5');
-      text.setAttribute('fill', '#fff'); text.setAttribute('font-size', '13');
-      text.setAttribute('font-weight', '600');
-      text.textContent = '' + (i + 1); g.appendChild(text);
+      text.setAttribute('fill', '#1E293B'); text.setAttribute('font-size', '15');
+      text.setAttribute('font-weight', '700');
+      text.textContent = label; g.appendChild(text);
       svg.appendChild(g);
     });
   }
@@ -292,14 +346,16 @@ document.querySelectorAll('.tools-tab').forEach(tab => {
   // 事件
   document.getElementById('graphBuildBtn').addEventListener('click', buildGraph);
   document.getElementById('graphClearBtn').addEventListener('click', () => {
-    document.getElementById('graphNodeCount').value = '5';
     document.getElementById('graphEdgeInput').value = '';
     svg.innerHTML = '';
+    stats.textContent = '';
     document.getElementById('graphExportPanel').style.display = 'none';
   });
   document.getElementById('graphExportBtn').addEventListener('click', () => {
-    const n = parseInt(document.getElementById('graphNodeCount').value) || 5;
+    const n = parseInt(document.getElementById('graphNodeCount').value) || 6;
     const raw = document.getElementById('graphEdgeInput').value.trim();
+    const idxMode = parseInt(document.getElementById('graphIndexMode').value);
+    const directed = document.getElementById('graphDirected').value === '1';
     const edges = [];
     if (raw) {
       raw.split('\n').forEach(line => {
@@ -312,8 +368,13 @@ document.querySelectorAll('.tools-tab').forEach(tab => {
       });
     }
     const matrix = Array.from({ length: n }, () => new Array(n).fill(0));
+    const seen = new Set();
     edges.forEach(e => {
-      if (e.from <= n && e.to <= n) matrix[e.from - 1][e.to - 1] = e.weight !== null ? e.weight : 1;
+      const fi = e.from - idxMode, ti = e.to - idxMode;
+      if (fi >= 0 && fi < n && ti >= 0 && ti < n) {
+        matrix[fi][ti] = e.weight !== null ? e.weight : 1;
+        if (!directed) matrix[ti][fi] = matrix[fi][ti];
+      }
     });
     const matStr = matrix.map(row => row.join(' ')).join('\n');
     const edgeStr = edges.map(e => e.from + ' ' + e.to + (e.weight !== null ? ' ' + e.weight : '')).join('\n');
