@@ -1847,9 +1847,14 @@ body {
 /* ===== 文章目录 TOC ===== */
 .post-detail-layout {
   display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  align-items: start;
+}
+
+.post-detail-layout.has-toc {
   grid-template-columns: 200px 1fr;
   gap: 32px;
-  align-items: start;
 }
 
 .post-toc {
