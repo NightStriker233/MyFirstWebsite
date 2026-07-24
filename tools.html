@@ -5,8 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>工具箱 - NightStriker</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
 </head>
 <body>
 
@@ -163,33 +168,29 @@
       <!-- ==================== 在线代码运行器 ==================== -->
       <div class="tools-panel" id="panel-runner">
         <div class="runner-notice">
-          ⚠️ Piston API 已停止公共服务。当前使用 <strong>Wandbox</strong> 在线编译（C++ 仅 gcc-head，Python 3）。
-          更全面的编译请前往 <a href="https://wandbox.org/" target="_blank" style="color:#4F46E5">Wandbox.org</a> 或
-          <a href="https://www.ideone.com/" target="_blank" style="color:#4F46E5">Ideone.com</a>。
+          ⚠️ 使用 <strong>Wandbox</strong> 在线编译（C++ gcc-head / Python 3.12）。
+          更多选项前往 <a href="https://wandbox.org/" target="_blank" style="color:#4F46E5">Wandbox.org</a>。
         </div>
-        <div class="runner-config">
+        <div class="runner-topbar">
           <select id="runnerLang" class="form-input" style="width:auto">
-            <option value="cpp">C++ (gcc head)</option>
-            <option value="python">Python 3</option>
+            <option value="cpp">C++ (gcc-head, -std=c++20)</option>
+            <option value="python">Python 3.12</option>
           </select>
+          <button class="btn btn-primary" id="runnerBtn">▶ 运行代码</button>
+          <span id="runnerStatus" style="font-size:0.85rem;color:#94A3B8"></span>
         </div>
-        <div class="runner-grid">
-          <div class="runner-col">
-            <label class="tool-label">源代码</label>
-            <textarea id="runnerCode" class="tool-textarea runner-code" placeholder="// 在此输入代码……" rows="12" spellcheck="false"></textarea>
+        <div class="runner-main">
+          <div class="runner-editor-wrap">
+            <div class="runner-editor" id="runnerEditor"></div>
           </div>
-          <div class="runner-col">
+          <div class="runner-io">
             <label class="tool-label">测试输入（每组用 === 分隔）</label>
-            <textarea id="runnerInput" class="tool-textarea" placeholder="输入数据……&#10;===&#10;第二组输入……" rows="5"></textarea>
+            <textarea id="runnerInput" class="tool-textarea" placeholder="输入数据……&#10;===&#10;第二组输入……" rows="4"></textarea>
             <label class="tool-label">输出结果</label>
             <div class="runner-output" id="runnerOutput">
               <p style="color:#94A3B8">点击运行查看结果……</p>
             </div>
           </div>
-        </div>
-        <div class="tool-actions">
-          <button class="btn btn-primary" id="runnerBtn">▶ 运行代码</button>
-          <span id="runnerStatus" style="font-size:0.85rem;color:#94A3B8;margin-left:12px"></span>
         </div>
       </div>
 
