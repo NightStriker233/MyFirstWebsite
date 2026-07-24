@@ -6,7 +6,7 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-const BLOG_PASSWORD = process.env.BLOG_PASSWORD || "mypassword123";
+const BLOG_PASSWORD = process.env.BLOG_PASSWORD || "110206";
 
 async function initTable() {
   const client = await pool.connect();
