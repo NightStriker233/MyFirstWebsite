@@ -2,6 +2,46 @@ const API_BASE = '/api/messages';
 const REPLIES_API = '/api/replies';
 const LIKES_API = '/api/likes';
 
+// ---- 随机一言 ----
+const quotes = [
+  "Talk is cheap. Show me the code. — Linus Torvalds",
+  "Stay hungry, stay foolish. — Steve Jobs",
+  "AC 一时爽，一直 AC 一直爽。",
+  "数组开小见祖宗。",
+  "十年 OI 一场空，不开 long long 见祖宗。",
+  "The only way to do great work is to love what you do. — Steve Jobs",
+  "千淘万漉虽辛苦，吹尽狂沙始到金。",
+  "调试两小时，Bug 是一个分号。",
+  "我不是在写 Bug，我是在创造特性。",
+  "1 秒钟能 AC 的题，为什么要想 1 小时？",
+  "Make it work, make it right, make it fast.",
+  "人生就像 OI，永远有下一道题等着你。",
+  "First, solve the problem. Then, write the code.",
+  "WA 是成功之母，TLE 是优化之母。"
+];
+(function() {
+  const el = document.getElementById('heroQuote');
+  if (el) {
+    const q = quotes[Math.floor(Math.random() * quotes.length)];
+    el.textContent = q;
+  }
+})();
+
+// ---- AtCoder Rating ----
+(function() {
+  fetch('/api/atcoder').then(r => r.json()).then(d => {
+    const card = document.getElementById('atcoderCard');
+    const ratingEl = document.getElementById('atcoderRating');
+    const rankEl = document.getElementById('atcoderRank');
+    if (!card || d.error) return;
+    ratingEl.textContent = d.rating;
+    ratingEl.style.color = d.color;
+    rankEl.textContent = d.rank;
+    rankEl.style.background = d.color;
+    card.style.display = 'flex';
+  }).catch(() => {});
+})();
+
 const form = document.getElementById('messageForm');
 const nameInput = document.getElementById('nameInput');
 const contentInput = document.getElementById('contentInput');
