@@ -21,6 +21,7 @@
         <a href="#messages">留言板</a>
         <a href="blog.html">博客</a>
         <a href="tools.html">工具箱</a>
+        <a href="games.html">游戏</a>
       </div>
     </div>
   </nav>
@@ -139,10 +140,14 @@
   <!-- 页脚 -->
   <footer class="footer">
     <div class="container">
-      <p>&copy; © 2026 NightStriker. All rights reserved.建</p>
+      <p>&copy; © 2026 NightStriker. All rights reserved.建 · <span id="visitorCount">…</span> 次访问</p>
     </div>
   </footer>
 
   <script src="script.js"></script>
+  <script>
+    fetch('/api/stats',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:'/'})})
+      .then(r=>r.json()).then(d=>document.getElementById('visitorCount').textContent=d.total).catch(()=>{});
+  </script>
 </body>
 </html>
