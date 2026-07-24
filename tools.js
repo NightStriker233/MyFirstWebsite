@@ -171,10 +171,25 @@ document.querySelectorAll('.tools-tab').forEach(tab => {
   }
 
   function buildGraph() {
-    const n = parseInt(document.getElementById('graphNodeCount').value) || 6;
+    const rawN = parseInt(document.getElementById('graphNodeCount').value);
     const raw = document.getElementById('graphEdgeInput').value.trim();
-    const idxMode = parseInt(document.getElementById('graphIndexMode').value); // 0 or 1
-    const directed = document.getElementById('graphDirected').value === '1';
+    const idxMode = parseInt(document.querySelector('#graphIndexMode .toggle-btn.active').dataset.val);
+    const directed = document.querySelector('#graphDirected .toggle-btn.active').dataset.val === '1';
+
+    // 先从边数据推断最大节点编号
+    let maxNode = 0;
+    if (raw) {
+      raw.split('\n').forEach(line => {
+        const parts = line.trim().split(/\s+/);
+        if (parts.length >= 2) {
+          const a = parseInt(parts[0]), b = parseInt(parts[1]);
+          if (!isNaN(a)) maxNode = Math.max(maxNode, a);
+          if (!isNaN(b)) maxNode = Math.max(maxNode, b);
+        }
+      });
+    }
+    // 节点数：优先手动设置，否则自动推断（至少 1）
+    const n = (!isNaN(rawN) && rawN > 0) ? rawN : Math.max(1, maxNode - idxMode + 1);
     if (n < 1 || n > 26) { showHint('节点数量需在 1~26 之间', 'error'); return; }
 
     const edges = [];
@@ -343,10 +358,32 @@ document.querySelectorAll('.tools-tab').forEach(tab => {
     });
   }
 
-  // 事件
-  document.getElementById('graphBuildBtn').addEventListener('click', buildGraph);
+  // 事件：实时渲染
+  let debounceTimer;
+  function scheduleRender() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(buildGraph, 200);
+  }
+  document.getElementById('graphEdgeInput').addEventListener('input', scheduleRender);
+  document.getElementById('graphNodeCount').addEventListener('input', scheduleRender);
+
+  // Toggle 按钮切换
+  function setupToggle(groupId) {
+    const group = document.getElementById(groupId);
+    group.querySelectorAll('.toggle-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        group.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        buildGraph();
+      });
+    });
+  }
+  setupToggle('graphIndexMode');
+  setupToggle('graphDirected');
+
   document.getElementById('graphClearBtn').addEventListener('click', () => {
     document.getElementById('graphEdgeInput').value = '';
+    document.getElementById('graphNodeCount').value = '';
     svg.innerHTML = '';
     stats.textContent = '';
     document.getElementById('graphExportPanel').style.display = 'none';
@@ -354,8 +391,8 @@ document.querySelectorAll('.tools-tab').forEach(tab => {
   document.getElementById('graphExportBtn').addEventListener('click', () => {
     const n = parseInt(document.getElementById('graphNodeCount').value) || 6;
     const raw = document.getElementById('graphEdgeInput').value.trim();
-    const idxMode = parseInt(document.getElementById('graphIndexMode').value);
-    const directed = document.getElementById('graphDirected').value === '1';
+    const idxMode = parseInt(document.querySelector('#graphIndexMode .toggle-btn.active').dataset.val);
+    const directed = document.querySelector('#graphDirected .toggle-btn.active').dataset.val === '1';
     const edges = [];
     if (raw) {
       raw.split('\n').forEach(line => {
