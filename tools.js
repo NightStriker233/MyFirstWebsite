@@ -337,9 +337,32 @@ document.querySelectorAll('.tools-tab').forEach(tab => {
     python: 'cpython-3.12.0'
   };
 
+  // CodeMirror 编辑器
+  const editor = CodeMirror(document.getElementById('runnerEditor'), {
+    value: '#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n  int a, b;\n  cin >> a >> b;\n  cout << a + b << endl;\n  return 0;\n}\n',
+    mode: 'text/x-c++src',
+    theme: 'material-darker',
+    lineNumbers: true,
+    indentUnit: 4,
+    tabSize: 4,
+    matchBrackets: true,
+    autoCloseBrackets: true
+  });
+  editor.setSize('100%', '100%');
+
+  // 语言切换
+  document.getElementById('runnerLang').addEventListener('change', () => {
+    const lang = document.getElementById('runnerLang').value;
+    if (lang === 'cpp') {
+      editor.setOption('mode', 'text/x-c++src');
+    } else {
+      editor.setOption('mode', 'text/x-python');
+    }
+  });
+
   document.getElementById('runnerBtn').addEventListener('click', async () => {
     const langKey = document.getElementById('runnerLang').value;
-    const code = document.getElementById('runnerCode').value;
+    const code = editor.getValue();
     const rawInput = document.getElementById('runnerInput').value;
     const status = document.getElementById('runnerStatus');
     const output = document.getElementById('runnerOutput');
@@ -360,7 +383,7 @@ document.querySelectorAll('.tools-tab').forEach(tab => {
           compiler: wandboxMap[langKey],
           code: code,
           stdin: inputs[i],
-          'compiler-option-raw': langKey === 'cpp' ? '-O2 -std=c++20' : ''
+          'compiler-option-raw': langKey === 'cpp' ? '-std=c++20' : ''
         });
         const res = await fetch('https://wandbox.org/api/compile.json', {
           method: 'POST',
@@ -378,7 +401,6 @@ document.querySelectorAll('.tools-tab').forEach(tab => {
       if (r.error) return '<div class="runner-case"><div class="runner-case-title">测试 ' + (r.index + 1) + ' ❌</div><pre class="runner-pre runner-pre-err">网络错误: ' + escapeHtml(r.error) + '</pre></div>';
       const d = r.data;
       let out = '';
-      // Wandbox 返回: { status, signal, compiler_message, program_message, url }
       if (d.compiler_message) out += d.compiler_message + '\n';
       if (d.program_message) out += d.program_message;
       if (!out) out = d.status || '(无输出)';
