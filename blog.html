@@ -2,6 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
+  <link rel="icon" type="image/png" href="/favicon.png">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>博客 - NightStriker</title>
   <link rel="stylesheet" href="style.css">
@@ -97,6 +98,16 @@
       <div id="detailView" style="display:none">
         <a href="#" class="back-link" id="backToListFromDetail">← 返回文章列表</a>
         <div class="post-full" id="postFull"></div>
+        <!-- 评论区 -->
+        <div class="blog-comments-section" id="blogCommentsSection">
+          <h3 class="blog-comments-title">💬 评论</h3>
+          <div class="comment-form">
+            <input type="text" class="form-input comment-name-input" id="blogCommentName" placeholder="你的名字（选填，默认「匿名」）" maxlength="50">
+            <textarea class="form-input form-textarea comment-content-input" id="blogCommentContent" placeholder="写下你的评论……" maxlength="500" rows="3"></textarea>
+            <button class="btn btn-primary comment-submit-btn" id="blogCommentSubmit">发表评论</button>
+          </div>
+          <div class="blog-comments-list" id="blogCommentsList"></div>
+        </div>
       </div>
 
     </div>
