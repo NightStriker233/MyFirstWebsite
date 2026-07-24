@@ -558,20 +558,17 @@ body {
 }
 
 @media (max-width: 640px) {
+  .nav-logo {
+    font-size: 1rem;
+  }
+  .nav-links {
+    gap: 10px;
+  }
+  .nav-links a {
+    font-size: 0.75rem;
+  }
   .intro-card {
     padding: 24px;
-  }
-  .social-links {
-    flex-direction: column;
-    gap: 6px;
-    margin-top: 16px;
-  }
-  .social-sep {
-    display: none;
-  }
-  .social-link {
-    font-size: 0.85rem;
-    color: #64748B;
   }
   .timeline {
     padding-left: 24px;
