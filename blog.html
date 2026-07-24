@@ -3,17 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>博客 - MySpace</title>
+  <title>博客 - NightStriker</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 </head>
 <body>
 
   <!-- 导航栏 -->
   <nav class="navbar">
     <div class="container nav-container">
-      <a href="index.html" class="nav-logo">✦ MySpace</a>
+      <a href="index.html" class="nav-logo">✦ NightStriker</a>
       <div class="nav-links">
         <a href="index.html#about">关于我</a>
         <a href="index.html#messages">留言板</a>
@@ -48,8 +51,17 @@
           <div class="form-group">
             <input type="text" id="postTitleInput" class="form-input" placeholder="文章标题" maxlength="200">
           </div>
-          <div class="form-group">
-            <textarea id="postContentInput" class="form-input form-textarea" placeholder="文章内容（支持换行）"></textarea>
+          <div class="editor-workspace">
+            <div class="editor-pane">
+              <div class="pane-label">📝 编辑（Markdown + LaTeX）</div>
+              <textarea id="postContentInput" class="form-input form-textarea editor-textarea" placeholder="支持 Markdown 语法和 $\LaTeX$ 公式&#10;&#10;# 标题&#10;**粗体** *斜体* &#10;- 列表&#10;&#10;行内公式: $E=mc^2$&#10;块公式: $$\sum_{i=1}^{n} x_i$$&#10;&#10;```cpp&#10;int main() { return 0; }&#10;```"></textarea>
+            </div>
+            <div class="preview-pane">
+              <div class="pane-label">👁 预览</div>
+              <div class="preview-content" id="livePreview">
+                <p style="color:#94A3B8">在左侧输入内容，这里实时预览……</p>
+              </div>
+            </div>
           </div>
           <div id="editorFeedback" class="form-feedback" style="display:none"></div>
           <div class="blog-editor-actions">
