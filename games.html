@@ -28,7 +28,6 @@
       <h1 class="tools-title">🎮 小游戏</h1>
       <div class="tools-tabs" id="tabsNav">
         <button class="tools-tab active" data-tab="minesweeper">💣 扫雷</button>
-        <button class="tools-tab" data-tab="snake">🕹 贪吃蛇</button>
         <button class="tools-tab" data-tab="tfe">🔢 2048</button>
         <button class="tools-tab" data-tab="life">🧩 生命游戏</button>
       </div>
@@ -36,11 +35,6 @@
       <div class="tools-panel active" id="panel-minesweeper">
         <div class="game-bar"><span id="mineStatus">💣 10</span><button class="btn-secondary btn-sm" id="mineReset">🔄 新游戏</button><span id="mineTimer" style="margin-left:auto">⏱ 0</span></div>
         <canvas id="mineCanvas" class="game-canvas"></canvas>
-      </div>
-
-      <div class="tools-panel" id="panel-snake">
-        <div class="game-bar"><span>🍎 得分：<strong id="snakeScore">0</strong></span><button class="btn-secondary btn-sm" id="snakeReset">🔄 新游戏</button><span style="margin-left:auto;font-size:0.8rem;color:#94A3B8">方向键移动</span></div>
-        <canvas id="snakeCanvas" class="game-canvas"></canvas>
       </div>
 
       <div class="tools-panel" id="panel-tfe">
