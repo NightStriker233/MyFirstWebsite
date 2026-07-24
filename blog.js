@@ -510,6 +510,7 @@ function generateTOC(container) {
   });
   tocNav.innerHTML = html;
   tocEl.style.display = 'block';
+  document.querySelector('.post-detail-layout').classList.add('has-toc');
 }
 
 // 绑定评论提交事件
