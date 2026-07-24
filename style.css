@@ -459,29 +459,29 @@ body {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 8px;
+  align-items: center;
+  gap: 0;
+  margin-top: 20px;
 }
 
 .social-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 14px;
-  font-size: 0.82rem;
+  font-size: 0.88rem;
   font-weight: 500;
   font-family: inherit;
-  color: #64748B;
-  background: #FFFBF4;
-  border: 1px solid #E8DFD5;
-  border-radius: 20px;
+  color: #94A3B8;
   text-decoration: none;
-  transition: all 0.2s;
+  transition: color 0.2s;
 }
 
 .social-link:hover {
-  border-color: #E88D5A;
   color: #E88D5A;
-  background: #FDF2E9;
+}
+
+.social-sep {
+  margin: 0 12px;
+  color: #E8DFD5;
+  font-size: 0.9rem;
+  user-select: none;
 }
 
 .intro-tags {
