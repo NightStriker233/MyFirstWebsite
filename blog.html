@@ -7,6 +7,7 @@
   <title>博客 - NightStriker</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -97,7 +98,13 @@
       <!-- 文章详情视图（隐藏） -->
       <div id="detailView" style="display:none">
         <a href="#" class="back-link" id="backToListFromDetail">← 返回文章列表</a>
-        <div class="post-full" id="postFull"></div>
+        <div class="post-detail-layout">
+          <div class="post-toc" id="postToc" style="display:none">
+            <div class="toc-title">📑 目录</div>
+            <nav class="toc-nav" id="tocNav"></nav>
+          </div>
+          <div class="post-full" id="postFull"></div>
+        </div>
         <!-- 评论区 -->
         <div class="blog-comments-section" id="blogCommentsSection">
           <h3 class="blog-comments-title">💬 评论</h3>
@@ -113,6 +120,7 @@
     </div>
   </section>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   <script src="blog.js"></script>
   <script>
     fetch('/api/stats',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:'/blog'})})
