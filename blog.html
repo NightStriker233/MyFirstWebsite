@@ -113,18 +113,6 @@
     </div>
   </section>
 
-  <!-- 密码弹窗（隐藏） -->
-  <div class="password-overlay" id="passwordOverlay" style="display:none">
-    <div class="password-dialog">
-      <h3>🔐 验证身份</h3>
-      <p>请输入密码以发布文章</p>
-      <input type="password" id="passwordInput" class="form-input" placeholder="输入密码" autocomplete="off">
-      <div class="password-error" id="passwordError" style="display:none"></div>
-      <button class="btn btn-primary" id="confirmPasswordBtn" style="width:100%">确认</button>
-      <button class="btn-secondary" id="cancelPasswordBtn" style="width:100%;margin-top:8px;background:#fff;color:#64748B;border-color:#E2E8F0">取消</button>
-    </div>
-  </div>
-
   <script src="blog.js"></script>
   <script>
     fetch('/api/stats',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:'/blog'})})
