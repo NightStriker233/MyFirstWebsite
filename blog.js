@@ -1,4 +1,6 @@
 const POSTS_API = '/api/posts';
+const COMMENTS_API = '/api/blog-comments';
+const BLOG_REPLIES_API = '/api/blog-replies';
 
 // 配置 marked
 marked.setOptions({ breaks: true, gfm: true });
@@ -8,16 +10,17 @@ const listView = document.getElementById('listView');
 const editorView = document.getElementById('editorView');
 const detailView = document.getElementById('detailView');
 const postsList = document.getElementById('postsList');
-const passwordOverlay = document.getElementById('passwordOverlay');
-const passwordInput = document.getElementById('passwordInput');
-const passwordError = document.getElementById('passwordError');
+const showEditorBtn = document.getElementById('showEditorBtn');
 
 let authPassword = localStorage.getItem('blog_key') || '';
 let editingPostId = null; // null = 新建, number = 编辑
+let currentPostId = null; // 当前查看的文章 ID
 
-// 如果已保存 key，自动写入供 API 使用
+// 如果有 key → 显示管理按钮；没有 → 隐藏
 if (authPassword) {
-  console.log('🔗 管理链接已激活');
+  showEditorBtn.style.display = 'inline-flex';
+} else {
+  showEditorBtn.style.display = 'none';
 }
 
 // ---- Markdown + LaTeX 渲染 ----
@@ -174,48 +177,13 @@ async function loadPostDetail(id) {
       postFull.appendChild(btnRow);
       document.getElementById('editFromDetailBtn').addEventListener('click', () => openEditor(id));
     }
+    // 加载评论
+    currentPostId = id;
+    loadComments(id);
     showDetail();
   } catch (err) {
     alert('加载文章失败：' + err.message);
   }
-}
-
-// ---- 密码弹窗 ----
-function showPasswordOverlay(callback) {
-  passwordInput.value = '';
-  passwordError.style.display = 'none';
-  passwordOverlay.style.display = 'flex';
-  passwordInput.focus();
-
-  function confirm() {
-    const pw = passwordInput.value.trim();
-    if (!pw) {
-      passwordError.textContent = '请输入密码';
-      passwordError.style.display = 'block';
-      return;
-    }
-    authPassword = pw;
-    passwordOverlay.style.display = 'none';
-    cleanup();
-    // 密码正确性通过 API 实际调用验证
-    callback(pw);
-  }
-
-  function cancel() {
-    passwordOverlay.style.display = 'none';
-    cleanup();
-  }
-
-  function cleanup() {
-    document.getElementById('confirmPasswordBtn').removeEventListener('click', confirm);
-    document.getElementById('cancelPasswordBtn').removeEventListener('click', cancel);
-    passwordInput.removeEventListener('keydown', onKey);
-  }
-
-  function onKey(e) { if (e.key === 'Enter') confirm(); if (e.key === 'Escape') cancel(); }
-  document.getElementById('confirmPasswordBtn').addEventListener('click', confirm);
-  document.getElementById('cancelPasswordBtn').addEventListener('click', cancel);
-  passwordInput.addEventListener('keydown', onKey);
 }
 
 // ---- 打开编辑器（新建/编辑） ----
@@ -298,7 +266,11 @@ async function savePost() {
     if (!res.ok) throw new Error(data.error || '保存失败');
     if (data.error === '密码错误') {
       authPassword = '';
-      showPasswordOverlay(pw => { authPassword = pw; savePost(); });
+      localStorage.removeItem('blog_key');
+      showEditorBtn.style.display = 'none';
+      feedback.textContent = '密码错误，请通过管理链接重新登录';
+      feedback.className = 'form-feedback error';
+      feedback.style.display = 'block';
       return;
     }
     showList();
@@ -333,14 +305,7 @@ async function deletePost() {
 
 // ---- 事件绑定 ----
 document.getElementById('showEditorBtn').addEventListener('click', () => {
-  if (authPassword) {
-    openEditor(null);
-    return;
-  }
-  showPasswordOverlay(pw => {
-    authPassword = pw;
-    openEditor(null);
-  });
+  openEditor(null);
 });
 
 document.getElementById('savePostBtn').addEventListener('click', savePost);
@@ -364,3 +329,169 @@ function formatDate(dateStr) {
 
 // ---- 初始化 ----
 document.addEventListener('DOMContentLoaded', loadPosts);
+
+// ====== 博客评论区 ======
+
+// 加载文章评论
+async function loadComments(postId) {
+  const list = document.getElementById('blogCommentsList');
+  list.innerHTML = '<div class="loading-state"><div class="loading-spinner"></div><p>加载评论…</p></div>';
+  try {
+    const res = await fetch(COMMENTS_API + '?post_id=' + postId);
+    const data = await res.json();
+    renderComments(data.comments || []);
+  } catch (err) {
+    list.innerHTML = '<p style="color:#94A3B8;text-align:center;padding:20px">评论加载失败</p>';
+  }
+}
+
+function renderComments(comments) {
+  const list = document.getElementById('blogCommentsList');
+  if (comments.length === 0) {
+    list.innerHTML = '<p class="no-comments">还没有评论，快来发表第一条吧 ✨</p>';
+    return;
+  }
+  list.innerHTML = comments.map(c => `
+    <div class="blog-comment">
+      <div class="comment-avatar">${getAvatar(c.name)}</div>
+      <div class="comment-body">
+        <div class="comment-header">
+          <span class="comment-name">${escapeHtml(c.name || '匿名')}</span>
+          <span class="comment-time">${formatDate(c.created_at)}</span>
+        </div>
+        <div class="comment-content">${escapeHtml(c.content)}</div>
+        <div class="comment-actions">
+          <button class="reply-toggle-btn" data-comment-id="${c.id}">💬 回复${c.reply_count > 0 ? ' (' + c.reply_count + ')' : ''}</button>
+        </div>
+        <div class="replies-section" id="replies-${c.id}" style="display:none"></div>
+        <div class="reply-form" id="replyForm-${c.id}" style="display:none">
+          <input type="text" class="reply-name-input" id="replyName-${c.id}" placeholder="你的名字（选填）" maxlength="50">
+          <textarea class="reply-content-input" id="replyContent-${c.id}" placeholder="写下你的回复…" rows="2" maxlength="300"></textarea>
+          <button class="reply-submit-btn" data-comment-id="${c.id}">发送回复</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  // 绑定回复按钮
+  list.querySelectorAll('.reply-toggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const cid = btn.dataset.commentId;
+      const repliesDiv = document.getElementById('replies-' + cid);
+      const formDiv = document.getElementById('replyForm-' + cid);
+      const isOpen = repliesDiv.style.display !== 'none';
+      if (isOpen) {
+        repliesDiv.style.display = 'none';
+        formDiv.style.display = 'none';
+      } else {
+        repliesDiv.style.display = 'block';
+        formDiv.style.display = 'block';
+        loadReplies(cid);
+      }
+    });
+  });
+
+  // 绑定回复提交
+  list.querySelectorAll('.reply-submit-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const cid = btn.dataset.commentId;
+      submitReply(cid);
+    });
+  });
+}
+
+// 加载回复
+async function loadReplies(commentId) {
+  const div = document.getElementById('replies-' + commentId);
+  try {
+    const res = await fetch(BLOG_REPLIES_API + '?comment_id=' + commentId);
+    const data = await res.json();
+    const replies = data.replies || [];
+    if (replies.length === 0) {
+      div.innerHTML = '<p style="color:#94A3B8;font-size:0.85rem;padding:8px 0">暂无回复</p>';
+    } else {
+      div.innerHTML = replies.map(r => `
+        <div class="blog-reply">
+          <span class="reply-name">${escapeHtml(r.name || '匿名')}</span>
+          <span class="reply-time">${formatDate(r.created_at)}</span>
+          <span class="reply-content">${escapeHtml(r.content)}</span>
+        </div>
+      `).join('');
+    }
+  } catch (err) {
+    div.innerHTML = '<p style="color:#DC2626;font-size:0.85rem">加载失败</p>';
+  }
+}
+
+// 提交评论
+async function submitComment() {
+  const nameInput = document.getElementById('blogCommentName');
+  const contentInput = document.getElementById('blogCommentContent');
+  const btn = document.getElementById('blogCommentSubmit');
+  const name = nameInput.value.trim() || '匿名';
+  const content = contentInput.value.trim();
+  if (!content) return;
+  if (!currentPostId) return;
+  btn.disabled = true;
+  btn.textContent = '发送中…';
+  try {
+    const res = await fetch(COMMENTS_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ post_id: currentPostId, name, content })
+    });
+    if (!res.ok) throw new Error('发送失败');
+    nameInput.value = '';
+    contentInput.value = '';
+    loadComments(currentPostId);
+  } catch (err) {
+    alert('评论发送失败：' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '发表评论';
+  }
+}
+
+// 提交回复
+async function submitReply(commentId) {
+  const nameInput = document.getElementById('replyName-' + commentId);
+  const contentInput = document.getElementById('replyContent-' + commentId);
+  const name = (nameInput.value || '').trim() || '匿名';
+  const content = contentInput.value.trim();
+  if (!content) return;
+  try {
+    const res = await fetch(BLOG_REPLIES_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ comment_id: commentId, name, content })
+    });
+    if (!res.ok) throw new Error('发送失败');
+    nameInput.value = '';
+    contentInput.value = '';
+    loadReplies(commentId);
+    // 刷新评论列表以更新回复计数
+    if (currentPostId) loadComments(currentPostId);
+  } catch (err) {
+    alert('回复发送失败：' + err.message);
+  }
+}
+
+// 头像生成
+function getAvatar(name) {
+  const colors = ['#E88D5A','#D4753B','#F4A261','#E76F51','#F5A07A'];
+  const idx = (name || '?').charCodeAt(0) % colors.length;
+  const letter = (name || '?')[0].toUpperCase();
+  return '<span class="avatar-badge" style="background:' + colors[idx] + '">' + letter + '</span>';
+}
+
+// 绑定评论提交事件
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('blogCommentSubmit').addEventListener('click', submitComment);
+  // Enter 快捷提交（Ctrl+Enter）
+  document.getElementById('blogCommentContent').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      submitComment();
+    }
+  });
+});
