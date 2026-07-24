@@ -9,8 +9,17 @@ const pool = new Pool({
 async function initTable() {
   const client = await pool.connect();
   try {
-    await client.query("CREATE TABLE IF NOT EXISTS messages (id SERIAL PRIMARY KEY, name VARCHAR(100) NOT NULL, content TEXT NOT NULL, created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW())");
-    await client.query("CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages (created_at DESC)");
+    // 留言表（含点赞计数）
+    await client.query(
+      "CREATE TABLE IF NOT EXISTS messages (id SERIAL PRIMARY KEY, name VARCHAR(100) NOT NULL, content TEXT NOT NULL, like_count INTEGER DEFAULT 0, created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW())"
+    );
+    await client.query(
+      "CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages (created_at DESC)"
+    );
+    // 兼容已有表：补加 like_count 字段
+    await client.query(
+      "ALTER TABLE messages ADD COLUMN IF NOT EXISTS like_count INTEGER DEFAULT 0"
+    );
   } finally { client.release(); }
 }
 
@@ -24,7 +33,13 @@ export default async function handler(req, res) {
     if (req.method === "GET") {
       const client = await pool.connect();
       try {
-        const r = await client.query("SELECT id, name, content, created_at FROM messages ORDER BY created_at DESC LIMIT 100");
+        const r = await client.query(
+          `SELECT m.id, m.name, m.content, m.like_count, m.created_at,
+            (SELECT COUNT(*) FROM replies WHERE replies.message_id = m.id)::int AS reply_count
+           FROM messages m
+           ORDER BY m.created_at DESC
+           LIMIT 100`
+        );
         return res.status(200).json({ messages: r.rows });
       } finally { client.release(); }
     }
@@ -35,7 +50,10 @@ export default async function handler(req, res) {
       if (!tn || !tc) return res.status(400).json({ error: "内容不能为空" });
       const client = await pool.connect();
       try {
-        const r = await client.query("INSERT INTO messages (name, content) VALUES ($1, $2) RETURNING id, name, content, created_at", [tn, tc]);
+        const r = await client.query(
+          "INSERT INTO messages (name, content) VALUES ($1, $2) RETURNING id, name, content, like_count, created_at",
+          [tn, tc]
+        );
         return res.status(201).json({ message: r.rows[0] });
       } finally { client.release(); }
     }
