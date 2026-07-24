@@ -685,6 +685,24 @@ body {
   align-items: center;
 }
 
+.reply-anonymous-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  color: #94A3B8;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.reply-anonymous-label input[type="checkbox"] {
+  width: 13px;
+  height: 13px;
+  accent-color: #E88D5A;
+  cursor: pointer;
+}
+
 .reply-name-input {
   flex: 1;
   padding: 8px 12px;
