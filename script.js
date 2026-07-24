@@ -83,6 +83,9 @@ function renderMessages(messages) {
           <form class="reply-form" data-action="submit-reply" data-msg-id="${msg.id}">
             <div class="reply-form-row">
               <input type="text" class="reply-name-input" placeholder="你的名字" maxlength="50" required>
+              <label class="reply-anonymous-label">
+                <input type="checkbox" class="reply-anonymous-check"> 匿名
+              </label>
               <button type="submit" class="reply-submit-btn">回复</button>
             </div>
             <textarea class="reply-content-input" placeholder="写下回复……" maxlength="300" required rows="2"></textarea>
@@ -91,6 +94,24 @@ function renderMessages(messages) {
       </div>`;
   }).join('');
 }
+
+// ---- 回复匿名复选框（事件委托） ----
+messagesList.addEventListener('change', (e) => {
+  const cb = e.target.closest('.reply-anonymous-check');
+  if (!cb) return;
+  const form = cb.closest('.reply-form');
+  const nameInput = form.querySelector('.reply-name-input');
+  if (cb.checked) {
+    nameInput.value = '匿名';
+    nameInput.disabled = true;
+    nameInput.style.opacity = '0.5';
+  } else {
+    nameInput.value = '';
+    nameInput.disabled = false;
+    nameInput.style.opacity = '1';
+    nameInput.focus();
+  }
+});
 
 // ---- 事件委托：点赞 / 展开回复 / 提交回复 ----
 messagesList.addEventListener('click', async (e) => {
@@ -163,7 +184,8 @@ messagesList.addEventListener('submit', async (e) => {
   const nameInput = formEl.querySelector('.reply-name-input');
   const contentInput = formEl.querySelector('.reply-content-input');
   const submitBtn = formEl.querySelector('.reply-submit-btn');
-  const name = nameInput.value.trim();
+  const anonCheck = formEl.querySelector('.reply-anonymous-check');
+  const name = anonCheck && anonCheck.checked ? '匿名' : nameInput.value.trim();
   const content = contentInput.value.trim();
   if (!name || !content) return;
 
