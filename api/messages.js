@@ -20,6 +20,13 @@ async function initTable() {
     await client.query(
       "ALTER TABLE messages ADD COLUMN IF NOT EXISTS like_count INTEGER DEFAULT 0"
     );
+    // 确保 replies 和 likes 表存在（避免首次 GET 时子查询报错）
+    await client.query(
+      "CREATE TABLE IF NOT EXISTS replies (id SERIAL PRIMARY KEY, message_id INTEGER NOT NULL, name VARCHAR(50) NOT NULL, content TEXT NOT NULL, created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW())"
+    );
+    await client.query(
+      "CREATE TABLE IF NOT EXISTS likes (id SERIAL PRIMARY KEY, message_id INTEGER NOT NULL, ip_address VARCHAR(45) NOT NULL, created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(), UNIQUE(message_id, ip_address))"
+    );
   } finally { client.release(); }
 }
 
