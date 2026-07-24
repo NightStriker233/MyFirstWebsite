@@ -1,5 +1,8 @@
 const POSTS_API = '/api/posts';
 
+// 配置 marked
+marked.setOptions({ breaks: true, gfm: true });
+
 // DOM 元素
 const listView = document.getElementById('listView');
 const editorView = document.getElementById('editorView');
@@ -11,6 +14,49 @@ const passwordError = document.getElementById('passwordError');
 
 let authPassword = '';
 let editingPostId = null; // null = 新建, number = 编辑
+
+// ---- Markdown + LaTeX 渲染 ----
+function renderContent(text) {
+  if (!text) return '';
+  // 第一步：保护代码块，避免被后续正则干扰
+  const codeBlocks = [];
+  let processed = text.replace(/```[\s\S]*?```/g, (match) => {
+    codeBlocks.push(match);
+    return '%%CODEBLOCK_' + (codeBlocks.length - 1) + '%%';
+  });
+  // 第二步：渲染 LaTeX 公式
+  // $$...$$ 块公式
+  processed = processed.replace(/\$\$([\s\S]*?)\$\$/g, (_, formula) => {
+    try { return katex.renderToString(formula.trim(), { displayMode: true, throwOnError: false }); }
+    catch (e) { return '<span class="katex-error">公式错误: ' + escapeHtml(formula) + '</span>'; }
+  });
+  // $...$ 行内公式（不匹配 $$）
+  processed = processed.replace(/(?<!\$)\$(?!\$)([^$]+?)\$(?!\$)/g, (_, formula) => {
+    try { return katex.renderToString(formula.trim(), { displayMode: false, throwOnError: false }); }
+    catch (e) { return '<span class="katex-error">公式错误: ' + escapeHtml(formula) + '</span>'; }
+  });
+  // 第三步：渲染 Markdown
+  let html = marked.parse(processed);
+  // 第四步：还原代码块（marked 已经渲染了它们，但占位符在 HTML 里，需要恢复原内容）
+  codeBlocks.forEach((block, i) => {
+    const rendered = marked.parse(block);
+    html = html.replace('%%CODEBLOCK_' + i + '%%', rendered);
+  });
+  return html;
+}
+
+// 去掉 Markdown 标记，生成纯文本摘要
+function stripMarkdown(text) {
+  if (!text) return '';
+  return text
+    .replace(/```[\s\S]*?```/g, ' [代码块] ')
+    .replace(/\$\$[\s\S]*?\$\$/g, ' [公式] ')
+    .replace(/\$[^$]+?\$/g, '')
+    .replace(/[#*>`~\[\]()_|-]/g, '')
+    .replace(/\n+/g, ' ')
+    .substring(0, 200)
+    .trim();
+}
 
 // ---- 视图切换 ----
 function showList() {
@@ -45,7 +91,7 @@ async function loadPosts() {
       <div class="blog-post-card" data-post-id="${p.id}">
         <h2 class="blog-post-title">${escapeHtml(p.title)}</h2>
         <div class="blog-post-meta">${formatDate(p.created_at)}</div>
-        <p class="blog-post-excerpt">${escapeHtml(p.excerpt || '')}</p>
+        <p class="blog-post-excerpt">${escapeHtml(stripMarkdown(p.excerpt || ''))}</p>
         <div class="blog-post-actions" style="display:none">
           <button class="btn-secondary btn-sm edit-post-btn" data-id="${p.id}">编辑</button>
         </div>
@@ -76,7 +122,7 @@ async function loadPostDetail(id) {
     postFull.innerHTML = `
       <h1 class="post-full-title">${escapeHtml(post.title)}</h1>
       <div class="post-full-meta">发布于 ${formatDate(post.created_at)}${post.updated_at !== post.created_at ? ' · 更新于 ' + formatDate(post.updated_at) : ''}</div>
-      <div class="post-full-content">${escapeHtml(post.content)}</div>
+      <div class="post-full-content">${renderContent(post.content)}</div>
     `;
     // 如果有密码，显示编辑按钮
     if (authPassword) {
@@ -139,10 +185,22 @@ function openEditor(postId) {
   const editorTitle = document.getElementById('editorTitle');
   const deleteBtn = document.getElementById('deletePostBtn');
   const feedback = document.getElementById('editorFeedback');
+  const livePreview = document.getElementById('livePreview');
 
   titleInput.value = '';
   contentInput.value = '';
   feedback.style.display = 'none';
+  livePreview.innerHTML = '<p style="color:#94A3B8">在左侧输入内容，这里实时预览……</p>';
+
+  // 实时预览
+  contentInput.oninput = () => {
+    const val = contentInput.value.trim();
+    if (!val) {
+      livePreview.innerHTML = '<p style="color:#94A3B8">在左侧输入内容，这里实时预览……</p>';
+    } else {
+      livePreview.innerHTML = renderContent(val);
+    }
+  };
 
   if (postId) {
     editorTitle.textContent = '编辑文章';
