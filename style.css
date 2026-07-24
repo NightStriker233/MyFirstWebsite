@@ -1140,7 +1140,7 @@ body {
 
 /* ===== 工具箱 ===== */
 .tools-section {
-  padding: 120px 0 80px;
+  padding: 100px 0 40px;
   min-height: 100vh;
 }
 
@@ -1149,7 +1149,7 @@ body {
   font-size: 2.2rem;
   font-weight: 700;
   color: #1E293B;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 }
 
 /* Tab 导航 */
@@ -1157,7 +1157,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-bottom: 32px;
+  margin-bottom: 20px;
   border-bottom: 1px solid #E8E4E0;
   padding-bottom: 0;
 }
@@ -1425,8 +1425,9 @@ body {
 
 .runner-main {
   display: grid;
-  grid-template-columns: 1.4fr 1fr;
+  grid-template-columns: 2.3fr 1fr;
   gap: 20px;
+  height: calc(100vh - 320px);
   min-height: 420px;
 }
 
@@ -1434,7 +1435,7 @@ body {
   border: 1.5px solid #E8E4E0;
   border-radius: 8px;
   overflow: hidden;
-  min-height: 420px;
+  height: 100%;
 }
 
 .runner-editor {
@@ -1451,6 +1452,12 @@ body {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  height: 100%;
+  min-height: 0;
+}
+
+.runner-io .tool-textarea {
+  flex: 0 0 auto;
 }
 
 .runner-output {
@@ -1458,8 +1465,7 @@ body {
   color: #E2E8F0;
   border-radius: 8px;
   padding: 16px;
-  min-height: 100px;
-  max-height: 400px;
+  min-height: 60px;
   overflow-y: auto;
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 0.85rem;
@@ -1505,8 +1511,8 @@ body {
 
 @media (max-width: 768px) {
   .tool-grid,
-  .runner-main { grid-template-columns: 1fr; }
-  .runner-editor-wrap { min-height: 300px; }
+  .runner-main { grid-template-columns: 1fr; height: auto; }
+  .runner-editor-wrap { height: 350px; }
   .random-row { grid-template-columns: 1fr 1fr; }
   .tools-tabs { gap: 2px; }
   .tools-tab { padding: 8px 12px; font-size: 0.78rem; }
