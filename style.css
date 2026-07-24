@@ -1369,6 +1369,41 @@ body {
   margin-bottom: 12px;
 }
 
+/* Toggle 按钮组 */
+.toggle-group {
+  display: flex;
+  border: 1.5px solid #E8E4E0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.toggle-btn {
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  font-family: inherit;
+  font-weight: 500;
+  color: #64748B;
+  background: #fff;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.toggle-btn + .toggle-btn {
+  border-left: 1.5px solid #E8E4E0;
+}
+
+.toggle-btn:hover {
+  background: #FAFAF9;
+}
+
+.toggle-btn.active {
+  background: #1E293B;
+  color: #fff;
+  font-weight: 600;
+}
+
 /* ---- 代码运行器 ---- */
 .runner-topbar {
   display: flex;
