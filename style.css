@@ -1518,3 +1518,60 @@ body {
   .tools-tab { padding: 8px 12px; font-size: 0.78rem; }
   .graph-svg { height: 320px; }
 }
+
+/* ===== 游戏页 ===== */
+.game-bar {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 10px;
+}
+.game-canvas {
+  display: block; border: 1.5px solid #E8E4E0; border-radius: 8px; background: #1E293B;
+  max-width: 100%; cursor: pointer;
+}
+
+/* 2048 */
+.tfe-board {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; max-width: 420px;
+  background: #BBADA0; padding: 10px; border-radius: 8px;
+}
+.tfe-cell {
+  aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem; font-weight: 700; border-radius: 6px; background: #CDC1B4; color: #776E65;
+}
+.tfe-2 { background: #EEE4DA; }
+.tfe-4 { background: #EDE0C8; }
+.tfe-8 { background: #F2B179; color: #fff; }
+.tfe-16 { background: #F59563; color: #fff; }
+.tfe-32 { background: #F67C5F; color: #fff; }
+.tfe-64 { background: #F65E3B; color: #fff; }
+.tfe-128 { background: #EDCF72; color: #fff; font-size: 1.2rem; }
+.tfe-256 { background: #EDCC61; color: #fff; font-size: 1.2rem; }
+.tfe-512 { background: #EDC850; color: #fff; font-size: 1.2rem; }
+.tfe-1024 { background: #EDC53F; color: #fff; font-size: 1rem; }
+.tfe-2048 { background: #EDC22E; color: #fff; font-size: 1rem; }
+
+/* 博客标签 */
+.blog-tags { margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.blog-tag-pill {
+  display: inline-block; padding: 3px 10px; font-size: 0.75rem; font-weight: 500;
+  background: #F0EDE8; color: #64748B; border-radius: 12px; cursor: pointer; transition: all 0.15s;
+}
+.blog-tag-pill:hover { background: #1E293B; color: #fff; }
+.blog-tag-sm {
+  display: inline-block; padding: 1px 7px; font-size: 0.7rem; font-weight: 500;
+  background: #F0EDE8; color: #64748B; border-radius: 10px; vertical-align: middle; margin: 0 2px;
+}
+
+/* 进制转换器 */
+.base-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.base-card {
+  background: #fff; border: 1px solid #E8E4E0; border-radius: 8px; padding: 16px; text-align: center;
+}
+.base-label { font-size: 0.75rem; color: #94A3B8; font-weight: 600; text-transform: uppercase; margin-bottom: 6px; }
+.base-card code { font-size: 1.1rem; font-weight: 700; color: #1E293B; font-family: 'Consolas','Monaco',monospace; word-break: break-all; }
+
+/* MD 表格编辑器 */
+.md-table-edit { width: 100%; border-collapse: collapse; }
+.md-table-edit th, .md-table-edit td { border: 1px solid #E8E4E0; padding: 4px; }
+.md-cell { width: 100%; border: none; padding: 8px; font-size: 0.85rem; font-family: inherit; outline: none; background: transparent; }
+.md-cell:focus { background: #FAFAF9; }
+@media (max-width: 768px) { .base-grid { grid-template-columns: repeat(2, 1fr); } }
