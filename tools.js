@@ -518,6 +518,89 @@ document.querySelectorAll('.tools-tab').forEach(tab => {
 })();
 
 // ============================================================
+//  📊 Markdown 表格生成器
+// ============================================================
+(function () {
+  document.getElementById('tableBuild').addEventListener('click', () => {
+    const rows = parseInt(document.getElementById('tableRows').value) || 3;
+    const cols = parseInt(document.getElementById('tableCols').value) || 3;
+    let html = '<table class="md-table-edit"><thead><tr>';
+    for (let c = 0; c < cols; c++) html += '<th><input class="md-cell" placeholder="表头' + (c + 1) + '"></th>';
+    html += '</tr></thead><tbody>';
+    for (let r = 0; r < rows; r++) {
+      html += '<tr>';
+      for (let c = 0; c < cols; c++) html += '<td><input class="md-cell" placeholder="' + (r + 1) + ',' + (c + 1) + '"></td>';
+      html += '</tr>';
+    }
+    html += '</tbody></table>';
+    document.getElementById('tableEditor').innerHTML = html;
+  });
+
+  document.getElementById('tableExportMd').addEventListener('click', () => {
+    const table = document.querySelector('.md-table-edit');
+    if (!table) return;
+    const rows = table.querySelectorAll('tr');
+    let md = '';
+    rows.forEach((row, i) => {
+      const cells = row.querySelectorAll('input');
+      const vals = Array.from(cells).map(c => c.value || ' ');
+      md += '| ' + vals.join(' | ') + ' |\n';
+      if (i === 0) md += '| ' + vals.map(() => '---').join(' | ') + ' |\n';
+    });
+    navigator.clipboard.writeText(md);
+    document.getElementById('tableFeedback').textContent = '✅ Markdown 表格已复制';
+    setTimeout(() => document.getElementById('tableFeedback').textContent = '', 2000);
+  });
+
+  document.getElementById('tableBuild').click();
+})();
+
+// ============================================================
+//  🔢 进制转换器
+// ============================================================
+(function () {
+  function update() {
+    const raw = document.getElementById('baseInput').value.trim();
+    let num;
+    if (raw.startsWith('0x') || raw.startsWith('0X')) num = parseInt(raw, 16);
+    else if (raw.startsWith('0b') || raw.startsWith('0B')) num = parseInt(raw.slice(2), 2);
+    else if (raw.startsWith('0o') || raw.startsWith('0O')) num = parseInt(raw.slice(2), 8);
+    else num = parseInt(raw, 10);
+    if (isNaN(num)) {
+      ['baseDec','baseHex','baseOct','baseBin'].forEach(id => document.getElementById(id).textContent = '—');
+      return;
+    }
+    document.getElementById('baseDec').textContent = num.toString(10);
+    document.getElementById('baseHex').textContent = '0x' + num.toString(16).toUpperCase();
+    document.getElementById('baseOct').textContent = '0o' + num.toString(8);
+    document.getElementById('baseBin').textContent = '0b' + num.toString(2);
+  }
+
+  document.getElementById('baseInput').addEventListener('input', update);
+
+  document.querySelectorAll('.base-op').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const raw = document.getElementById('baseInput').value.trim();
+      let num = parseInt(raw, 10);
+      if (raw.startsWith('0x')) num = parseInt(raw, 16);
+      else if (raw.startsWith('0b')) num = parseInt(raw.slice(2), 2);
+      const val = parseInt(document.getElementById('baseOpVal').value) || 0;
+      const op = btn.dataset.op;
+      let result;
+      switch (op) {
+        case '&': result = num & val; break;
+        case '|': result = num | val; break;
+        case '^': result = num ^ val; break;
+        case '~': result = ~num; break;
+        case '<<': result = num << val; break;
+        case '>>': result = num >> val; break;
+      }
+      document.getElementById('baseOpResult').textContent = '= ' + result + ' (0x' + result.toString(16).toUpperCase() + ')';
+    });
+  });
+})();
+
+// ============================================================
 //  工具函数
 // ============================================================
 function escapeHtml(str) {
