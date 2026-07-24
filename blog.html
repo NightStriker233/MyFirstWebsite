@@ -7,9 +7,21 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script>
+    // 管理链接：blog.html?key=xxx 自动保存密码
+    (function() {
+      var params = new URLSearchParams(window.location.search);
+      var key = params.get('key');
+      if (key) {
+        localStorage.setItem('blog_key', key);
+        // 清理 URL 中的 key 参数
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    })();
+  </script>
 </head>
 <body>
 
