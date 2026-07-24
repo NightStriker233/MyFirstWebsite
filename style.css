@@ -561,6 +561,18 @@ body {
   .intro-card {
     padding: 24px;
   }
+  .social-links {
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 16px;
+  }
+  .social-sep {
+    display: none;
+  }
+  .social-link {
+    font-size: 0.85rem;
+    color: #64748B;
+  }
   .timeline {
     padding-left: 24px;
   }
