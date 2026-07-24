@@ -147,6 +147,21 @@ document.querySelectorAll('.tools-tab').forEach(tab => {
     if (e.key === 'ArrowRight') move(1, 0);
   });
 
+  // 触屏滑动
+  let touchStartX = 0, touchStartY = 0;
+  boardEl.addEventListener('touchstart', e => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }, { passive: true });
+  boardEl.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    if (Math.abs(dx) < 20 && Math.abs(dy) < 20) return;
+    e.preventDefault();
+    if (Math.abs(dx) > Math.abs(dy)) move(dx > 0 ? 1 : -1, 0);
+    else move(0, dy > 0 ? 1 : -1);
+  });
+
   document.getElementById('tfeReset').addEventListener('click', init);
   init();
 })();
@@ -186,10 +201,28 @@ document.querySelectorAll('.tools-tab').forEach(tab => {
   }
 
   function draw() {
-    ctx.fillStyle = '#1E293B'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const w = COLS * CELL, h = ROWS * CELL;
+    if (!draw.buf || draw.buf.width !== w || draw.buf.height !== h) {
+      draw.buf = ctx.createImageData(w, h);
+    }
+    const data = draw.buf.data;
+    // 背景色 #1E293B
+    for (let i = 0; i < data.length; i += 4) {
+      data[i] = 30; data[i + 1] = 41; data[i + 2] = 59; data[i + 3] = 255;
+    }
+    // 活细胞 #4ADE80，留 1px 间隙
     for (let r = 0; r < ROWS; r++)
-      for (let c = 0; c < COLS; c++)
-        if (grid[r][c]) { ctx.fillStyle = '#4ADE80'; ctx.fillRect(c * CELL + 1, r * CELL + 1, CELL - 2, CELL - 2); }
+      for (let c = 0; c < COLS; c++) {
+        if (!grid[r][c]) continue;
+        const x0 = c * CELL + 1, y0 = r * CELL + 1;
+        const x1 = x0 + CELL - 2, y1 = y0 + CELL - 2;
+        for (let y = y0; y < y1; y++)
+          for (let x = x0; x < x1; x++) {
+            const i = (y * w + x) * 4;
+            data[i] = 74; data[i + 1] = 222; data[i + 2] = 128; data[i + 3] = 255;
+          }
+      }
+    ctx.putImageData(draw.buf, 0, 0);
   }
 
   canvas.addEventListener('click', e => {
