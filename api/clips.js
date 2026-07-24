@@ -78,7 +78,7 @@ export default async function handler(req, res) {
           "INSERT INTO clips (code, content, burn_after_read, expires_at) VALUES ($1, $2, $3, $4)",
           [code, tc, burn, expires]
         );
-        return res.status(201).json({ code, url: "/c/" + code, burn_after_read: burn });
+        return res.status(201).json({ code, url: "/api/clips?code=" + code, burn_after_read: burn });
       } finally { client.release(); }
     }
 
