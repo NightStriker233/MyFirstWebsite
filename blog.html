@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>博客 - MySpace</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- 导航栏 -->
+  <nav class="navbar">
+    <div class="container nav-container">
+      <a href="index.html" class="nav-logo">✦ MySpace</a>
+      <div class="nav-links">
+        <a href="index.html#about">关于我</a>
+        <a href="index.html#messages">留言板</a>
+        <a href="blog.html" style="color:#4F46E5">博客</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 博客主体 -->
+  <section class="blog-section">
+    <div class="container">
+
+      <!-- 列表视图 -->
+      <div id="listView">
+        <div class="blog-header">
+          <h1>📝 博客</h1>
+          <button class="btn-secondary" id="showEditorBtn">✏️ 写文章</button>
+        </div>
+        <div class="blog-posts-list" id="postsList">
+          <div class="loading-state">
+            <div class="loading-spinner"></div>
+            <p>加载文章中…</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 编辑器视图（隐藏） -->
+      <div id="editorView" style="display:none">
+        <a href="#" class="back-link" id="backToListFromEditor">← 返回文章列表</a>
+        <div class="blog-editor">
+          <h3 id="editorTitle">写新文章</h3>
+          <div class="form-group">
+            <input type="text" id="postTitleInput" class="form-input" placeholder="文章标题" maxlength="200">
+          </div>
+          <div class="form-group">
+            <textarea id="postContentInput" class="form-input form-textarea" placeholder="文章内容（支持换行）"></textarea>
+          </div>
+          <div id="editorFeedback" class="form-feedback" style="display:none"></div>
+          <div class="blog-editor-actions">
+            <button class="btn btn-primary" id="savePostBtn">发布文章</button>
+            <button class="btn-secondary" id="cancelEditBtn">取消</button>
+            <button class="btn-danger btn-sm" id="deletePostBtn" style="display:none;margin-left:auto">删除文章</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 文章详情视图（隐藏） -->
+      <div id="detailView" style="display:none">
+        <a href="#" class="back-link" id="backToListFromDetail">← 返回文章列表</a>
+        <div class="post-full" id="postFull"></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 密码弹窗（隐藏） -->
+  <div class="password-overlay" id="passwordOverlay" style="display:none">
+    <div class="password-dialog">
+      <h3>🔐 验证身份</h3>
+      <p>请输入密码以发布文章</p>
+      <input type="password" id="passwordInput" class="form-input" placeholder="输入密码" autocomplete="off">
+      <div class="password-error" id="passwordError" style="display:none"></div>
+      <button class="btn btn-primary" id="confirmPasswordBtn" style="width:100%">确认</button>
+      <button class="btn-secondary" id="cancelPasswordBtn" style="width:100%;margin-top:8px;background:#fff;color:#64748B;border-color:#E2E8F0">取消</button>
+    </div>
+  </div>
+
+  <script src="blog.js"></script>
+</body>
+</html>
