@@ -6,18 +6,18 @@ const LIKES_API = '/api/likes';
 const quotes = [
   "Talk is cheap. Show me the code. — Linus Torvalds",
   "Stay hungry, stay foolish. — Steve Jobs",
-  "AC 一时爽，一直 AC 一直爽。",
-  "数组开小见祖宗。",
-  "十年 OI 一场空，不开 long long 见祖宗。",
   "The only way to do great work is to love what you do. — Steve Jobs",
-  "千淘万漉虽辛苦，吹尽狂沙始到金。",
-  "调试两小时，Bug 是一个分号。",
-  "我不是在写 Bug，我是在创造特性。",
-  "1 秒钟能 AC 的题，为什么要想 1 小时？",
-  "Make it work, make it right, make it fast.",
-  "人生就像 OI，永远有下一道题等着你。",
-  "First, solve the problem. Then, write the code.",
-  "WA 是成功之母，TLE 是优化之母。"
+  "Simplicity is the ultimate sophistication. — Leonardo da Vinci",
+  "Any fool can write code that a computer can understand. Good programmers write code that humans can understand. — Martin Fowler",
+  "First, solve the problem. Then, write the code. — John Johnson",
+  "Make it work, make it right, make it fast. — Kent Beck",
+  "Programs must be written for people to read, and only incidentally for machines to execute. — Harold Abelson",
+  "Simplicity is prerequisite for reliability. — Edsger Dijkstra",
+  "The purpose of computing is insight, not numbers. — Richard Hamming",
+  "God does not play dice. — Albert Einstein",
+  "I think, therefore I am. — René Descartes",
+  "The unexamined life is not worth living. — Socrates",
+  "Knowledge is power. — Francis Bacon"
 ];
 (function() {
   const el = document.getElementById('heroQuote');
@@ -27,20 +27,7 @@ const quotes = [
   }
 })();
 
-// ---- AtCoder Rating ----
-(function() {
-  fetch('/api/atcoder').then(r => r.json()).then(d => {
-    const card = document.getElementById('atcoderCard');
-    const ratingEl = document.getElementById('atcoderRating');
-    const rankEl = document.getElementById('atcoderRank');
-    if (!card || d.error) return;
-    ratingEl.textContent = d.rating;
-    ratingEl.style.color = d.color;
-    rankEl.textContent = d.rank;
-    rankEl.style.background = d.color;
-    card.style.display = 'flex';
-  }).catch(() => {});
-})();
+
 
 const form = document.getElementById('messageForm');
 const nameInput = document.getElementById('nameInput');
