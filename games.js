@@ -141,10 +141,10 @@ document.querySelectorAll('.tools-tab').forEach(tab => {
   }
 
   document.addEventListener('keydown', e => {
-    if (e.key === 'ArrowUp') move(0, -1);
-    if (e.key === 'ArrowDown') move(0, 1);
-    if (e.key === 'ArrowLeft') move(-1, 0);
-    if (e.key === 'ArrowRight') move(1, 0);
+    if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') move(0, -1);
+    if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') move(0, 1);
+    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') move(-1, 0);
+    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') move(1, 0);
   });
 
   // 触屏滑动
@@ -225,10 +225,59 @@ document.querySelectorAll('.tools-tab').forEach(tab => {
     ctx.putImageData(draw.buf, 0, 0);
   }
 
-  canvas.addEventListener('click', e => {
+  let painting = false, paintMode = 1;
+  canvas.addEventListener('mousedown', e => {
+    painting = true;
     const rect = canvas.getBoundingClientRect();
     const c = Math.floor((e.clientX - rect.left) / CELL), r = Math.floor((e.clientY - rect.top) / CELL);
-    if (r >= 0 && r < ROWS && c >= 0 && c < COLS) { grid[r][c] = grid[r][c] ? 0 : 1; draw(); }
+    if (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
+      paintMode = grid[r][c] ? 0 : 1;
+      grid[r][c] = paintMode;
+      draw();
+    }
+  });
+  canvas.addEventListener('mousemove', e => {
+    if (!painting) return;
+    const rect = canvas.getBoundingClientRect();
+    const c = Math.floor((e.clientX - rect.left) / CELL), r = Math.floor((e.clientY - rect.top) / CELL);
+    if (r >= 0 && r < ROWS && c >= 0 && c < COLS && grid[r][c] !== paintMode) {
+      grid[r][c] = paintMode;
+      draw();
+    }
+  });
+  document.addEventListener('mouseup', () => { painting = false; });
+
+  // 触屏拖拽
+  canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    painting = true;
+    const rect = canvas.getBoundingClientRect();
+    const c = Math.floor((e.touches[0].clientX - rect.left) / CELL), r = Math.floor((e.touches[0].clientY - rect.top) / CELL);
+    if (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
+      paintMode = grid[r][c] ? 0 : 1;
+      grid[r][c] = paintMode;
+      draw();
+    }
+  });
+  canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if (!painting) return;
+    const rect = canvas.getBoundingClientRect();
+    const c = Math.floor((e.touches[0].clientX - rect.left) / CELL), r = Math.floor((e.touches[0].clientY - rect.top) / CELL);
+    if (r >= 0 && r < ROWS && c >= 0 && c < COLS && grid[r][c] !== paintMode) {
+      grid[r][c] = paintMode;
+      draw();
+    }
+  });
+  document.addEventListener('touchend', () => { painting = false; });
+
+  // 随机填充
+  document.getElementById('lifeRandom').addEventListener('click', () => {
+    for (let r = 0; r < ROWS; r++)
+      for (let c = 0; c < COLS; c++)
+        grid[r][c] = Math.random() < 0.25 ? 1 : 0;
+    gen = 0; genEl.textContent = '0';
+    draw();
   });
 
   document.getElementById('lifePlay').addEventListener('click', () => {
