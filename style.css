@@ -1956,7 +1956,7 @@ body {
 .message-content.collapsed,
 .comment-content.collapsed,
 .reply-content.collapsed {
-  max-height: 4.2em;
+  max-height: 7.2em;
   overflow: hidden;
   position: relative;
 }
