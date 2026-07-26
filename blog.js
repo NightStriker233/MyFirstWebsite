@@ -370,8 +370,8 @@ function renderComments(comments) {
           <span class="comment-name">${escapeHtml(c.name || '匿名')}</span>
           <span class="comment-time">${formatDate(c.created_at)}</span>
         </div>
-        <div class="comment-content${c.content.length > 200 ? ' collapsed' : ''}">${escapeHtml(c.content)}</div>
-        ${c.content.length > 200 ? '<button class="expand-btn">展开 ▼</button>' : ''}
+        <div class="comment-content${c.content.length > 300 ? ' collapsed' : ''}">${escapeHtml(c.content)}</div>
+        ${c.content.length > 300 ? '<button class="expand-btn">展开 ▼</button>' : ''}
         <div class="comment-actions">
           <button class="reply-toggle-btn" data-comment-id="${c.id}">💬 回复${c.reply_count > 0 ? ' (' + c.reply_count + ')' : ''}</button>
         </div>
@@ -437,8 +437,8 @@ async function loadReplies(commentId) {
         <div class="blog-reply">
           <span class="reply-name">${escapeHtml(r.name || '匿名')}</span>
           <span class="reply-time">${formatDate(r.created_at)}</span>
-          <span class="reply-content${r.content.length > 200 ? ' collapsed' : ''}">${escapeHtml(r.content)}</span>
-          ${r.content.length > 200 ? '<button class="expand-btn" style="flex-basis:100%;margin-top:2px">展开 ▼</button>' : ''}
+          <span class="reply-content${r.content.length > 300 ? ' collapsed' : ''}">${escapeHtml(r.content)}</span>
+          ${r.content.length > 300 ? '<button class="expand-btn" style="flex-basis:100%;margin-top:2px">展开 ▼</button>' : ''}
         </div>
       `).join('');
     }
