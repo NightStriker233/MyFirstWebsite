@@ -370,7 +370,8 @@ function renderComments(comments) {
           <span class="comment-name">${escapeHtml(c.name || '匿名')}</span>
           <span class="comment-time">${formatDate(c.created_at)}</span>
         </div>
-        <div class="comment-content">${escapeHtml(c.content)}</div>
+        <div class="comment-content${c.content.length > 200 ? ' collapsed' : ''}">${escapeHtml(c.content)}</div>
+        ${c.content.length > 200 ? '<button class="expand-btn">展开 ▼</button>' : ''}
         <div class="comment-actions">
           <button class="reply-toggle-btn" data-comment-id="${c.id}">💬 回复${c.reply_count > 0 ? ' (' + c.reply_count + ')' : ''}</button>
         </div>
@@ -409,6 +410,17 @@ function renderComments(comments) {
       submitReply(cid);
     });
   });
+
+  // 绑定展开按钮
+  list.querySelectorAll('.expand-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const content = btn.previousElementSibling;
+      if (content) {
+        content.classList.toggle('collapsed');
+        btn.textContent = content.classList.contains('collapsed') ? '展开 ▼' : '收起 ▲';
+      }
+    });
+  });
 }
 
 // 加载回复
@@ -425,10 +437,21 @@ async function loadReplies(commentId) {
         <div class="blog-reply">
           <span class="reply-name">${escapeHtml(r.name || '匿名')}</span>
           <span class="reply-time">${formatDate(r.created_at)}</span>
-          <span class="reply-content">${escapeHtml(r.content)}</span>
+          <span class="reply-content${r.content.length > 200 ? ' collapsed' : ''}">${escapeHtml(r.content)}</span>
+          ${r.content.length > 200 ? '<button class="expand-btn" style="flex-basis:100%;margin-top:2px">展开 ▼</button>' : ''}
         </div>
       `).join('');
     }
+    // 绑定回复中的展开按钮
+    div.querySelectorAll('.expand-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const content = btn.previousElementSibling;
+        if (content) {
+          content.classList.toggle('collapsed');
+          btn.textContent = content.classList.contains('collapsed') ? '展开 ▼' : '收起 ▲';
+        }
+      });
+    });
   } catch (err) {
     div.innerHTML = '<p style="color:#DC2626;font-size:0.85rem">加载失败</p>';
   }
