@@ -91,8 +91,7 @@ function renderMessages(messages) {
           <span class="message-name">${escapeHtml(msg.name)}</span>
           <span class="message-time">${time}</span>
         </div>
-        <div class="message-content${msg.content.length > 300 ? ' collapsed' : ''}">${escapeHtml(msg.content)}</div>
-        ${msg.content.length > 300 ? '<button class="expand-btn">展开 ▼</button>' : ''}
+        <div class="message-content">${escapeHtml(msg.content)}</div>
         <div class="message-actions">
           <button class="like-btn${likedSet.has(msg.id) ? ' liked' : ''}" data-action="like" data-msg-id="${msg.id}">
             <span class="like-icon">${likedSet.has(msg.id) ? '❤️' : '🤍'}</span>
@@ -121,6 +120,7 @@ function renderMessages(messages) {
         </div>
       </div>`;
   }).join('');
+  applyCollapse(messagesList);
 }
 
 // ---- 回复匿名复选框（事件委托） ----
@@ -272,10 +272,10 @@ async function loadReplies(msgId, forceReload) {
         <div class="reply-item">
           <span class="reply-name">${escapeHtml(r.name)}</span>
           <span class="reply-time">${formatTime(r.created_at)}</span>
-          <p class="reply-content${r.content.length > 300 ? ' collapsed' : ''}">${escapeHtml(r.content)}</p>
-          ${r.content.length > 300 ? '<button class="expand-btn">展开 ▼</button>' : ''}
+          <p class="reply-content">${escapeHtml(r.content)}</p>
         </div>
       `).join('');
+      applyCollapse(listEl);
     }
     listEl.dataset.loaded = 'true';
   } catch (err) {
@@ -354,6 +354,20 @@ form.addEventListener('submit', async (e) => {
 });
 
 // ---- 工具函数 ----
+function applyCollapse(container) {
+  const MAX = 7.2 * parseFloat(getComputedStyle(document.documentElement).fontSize);
+  const items = container.querySelectorAll('.message-content, .reply-content');
+  items.forEach(el => {
+    if (el.scrollHeight > MAX + 4) {
+      el.classList.add('collapsed');
+      const btn = document.createElement('button');
+      btn.className = 'expand-btn';
+      btn.textContent = '展开 ▼';
+      el.insertAdjacentElement('afterend', btn);
+    }
+  });
+}
+
 function formatTime(dateStr) {
   const d = new Date(dateStr);
   const now = new Date();
