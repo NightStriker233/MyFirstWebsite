@@ -326,6 +326,20 @@ document.getElementById('backToListFromEditor').addEventListener('click', (e) =>
 document.getElementById('backToListFromDetail').addEventListener('click', (e) => { e.preventDefault(); showList(); });
 
 // ---- 工具函数 ----
+function applyCollapse(container) {
+  const MAX = 7.2 * parseFloat(getComputedStyle(document.documentElement).fontSize);
+  const items = container.querySelectorAll('.comment-content, .reply-content');
+  items.forEach(el => {
+    if (el.scrollHeight > MAX + 4) {
+      el.classList.add('collapsed');
+      const btn = document.createElement('button');
+      btn.className = 'expand-btn';
+      btn.textContent = '展开 ▼';
+      el.insertAdjacentElement('afterend', btn);
+    }
+  });
+}
+
 function escapeHtml(str) {
   var div = document.createElement('div');
   div.textContent = str;
@@ -370,8 +384,7 @@ function renderComments(comments) {
           <span class="comment-name">${escapeHtml(c.name || '匿名')}</span>
           <span class="comment-time">${formatDate(c.created_at)}</span>
         </div>
-        <div class="comment-content${c.content.length > 300 ? ' collapsed' : ''}">${escapeHtml(c.content)}</div>
-        ${c.content.length > 300 ? '<button class="expand-btn">展开 ▼</button>' : ''}
+        <div class="comment-content">${escapeHtml(c.content)}</div>
         <div class="comment-actions">
           <button class="reply-toggle-btn" data-comment-id="${c.id}">💬 回复${c.reply_count > 0 ? ' (' + c.reply_count + ')' : ''}</button>
         </div>
@@ -384,6 +397,7 @@ function renderComments(comments) {
       </div>
     </div>
   `).join('');
+  applyCollapse(list);
 
   // 绑定回复按钮
   list.querySelectorAll('.reply-toggle-btn').forEach(btn => {
@@ -437,10 +451,10 @@ async function loadReplies(commentId) {
         <div class="blog-reply">
           <span class="reply-name">${escapeHtml(r.name || '匿名')}</span>
           <span class="reply-time">${formatDate(r.created_at)}</span>
-          <span class="reply-content${r.content.length > 300 ? ' collapsed' : ''}">${escapeHtml(r.content)}</span>
-          ${r.content.length > 300 ? '<button class="expand-btn" style="flex-basis:100%;margin-top:2px">展开 ▼</button>' : ''}
+          <span class="reply-content">${escapeHtml(r.content)}</span>
         </div>
       `).join('');
+      applyCollapse(div);
     }
     // 绑定回复中的展开按钮
     div.querySelectorAll('.expand-btn').forEach(btn => {
