@@ -7,6 +7,13 @@ document.querySelectorAll('.tools-tab').forEach(tab => {
     document.querySelectorAll('.tools-panel').forEach(p => p.classList.remove('active'));
     tab.classList.add('active');
     document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+    // 修复 CodeMirror 在隐藏容器中初始化导致的行号重叠
+    if (tab.dataset.tab === 'runner') {
+      setTimeout(() => {
+        const cmEl = document.querySelector('#panel-runner .CodeMirror');
+        if (cmEl && cmEl.CodeMirror) cmEl.CodeMirror.refresh();
+      }, 20);
+    }
   });
 });
 
