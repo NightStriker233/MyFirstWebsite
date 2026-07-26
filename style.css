@@ -1951,3 +1951,39 @@ body {
   max-width: 500px;
   margin: 0 auto;
 }
+
+/* ===== 长文本折叠 ===== */
+.message-content.collapsed,
+.comment-content.collapsed,
+.reply-content.collapsed {
+  max-height: 4.2em;
+  overflow: hidden;
+  position: relative;
+}
+
+.message-content.collapsed::after,
+.comment-content.collapsed::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2em;
+  background: linear-gradient(transparent, #fff);
+  pointer-events: none;
+}
+
+.expand-btn {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: #E88D5A;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-weight: 600;
+}
+
+.expand-btn:hover { color: #D4753B; }
