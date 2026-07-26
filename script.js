@@ -91,8 +91,8 @@ function renderMessages(messages) {
           <span class="message-name">${escapeHtml(msg.name)}</span>
           <span class="message-time">${time}</span>
         </div>
-        <div class="message-content${msg.content.length > 200 ? ' collapsed' : ''}">${escapeHtml(msg.content)}</div>
-        ${msg.content.length > 200 ? '<button class="expand-btn">展开 ▼</button>' : ''}
+        <div class="message-content${msg.content.length > 300 ? ' collapsed' : ''}">${escapeHtml(msg.content)}</div>
+        ${msg.content.length > 300 ? '<button class="expand-btn">展开 ▼</button>' : ''}
         <div class="message-actions">
           <button class="like-btn${likedSet.has(msg.id) ? ' liked' : ''}" data-action="like" data-msg-id="${msg.id}">
             <span class="like-icon">${likedSet.has(msg.id) ? '❤️' : '🤍'}</span>
@@ -272,8 +272,8 @@ async function loadReplies(msgId, forceReload) {
         <div class="reply-item">
           <span class="reply-name">${escapeHtml(r.name)}</span>
           <span class="reply-time">${formatTime(r.created_at)}</span>
-          <p class="reply-content${r.content.length > 200 ? ' collapsed' : ''}">${escapeHtml(r.content)}</p>
-          ${r.content.length > 200 ? '<button class="expand-btn">展开 ▼</button>' : ''}
+          <p class="reply-content${r.content.length > 300 ? ' collapsed' : ''}">${escapeHtml(r.content)}</p>
+          ${r.content.length > 300 ? '<button class="expand-btn">展开 ▼</button>' : ''}
         </div>
       `).join('');
     }
