@@ -9,10 +9,14 @@ document.querySelectorAll('.tools-tab').forEach(tab => {
     document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
     // 修复 CodeMirror 在隐藏容器中初始化导致的行号重叠
     if (tab.dataset.tab === 'runner') {
-      setTimeout(() => {
-        const cmEl = document.querySelector('#panel-runner .CodeMirror');
-        if (cmEl && cmEl.CodeMirror) cmEl.CodeMirror.refresh();
-      }, 20);
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          const cmEl = document.querySelector('#panel-runner .CodeMirror');
+          if (cmEl && cmEl.CodeMirror) {
+            cmEl.CodeMirror.refresh();
+          }
+        }, 50);
+      });
     }
   });
 });
@@ -453,7 +457,7 @@ document.querySelectorAll('.tools-tab').forEach(tab => {
     matchBrackets: true,
     autoCloseBrackets: true
   });
-  editor.setSize('100%', '100%');
+  // 不用 setSize，由 CSS 控制尺寸，避免隐藏状态下塌缩为 0
 
   // 语言切换
   document.getElementById('runnerLang').addEventListener('change', () => {
