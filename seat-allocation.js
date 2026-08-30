@@ -292,12 +292,17 @@ function collectSeatGroups() {
 // 按性别配对学生：最大化男女混合同桌。
 // 男女优先 → 剩余单性别先用未标注者搭配（避免同性）→ 实在无法避免才同性配对
 function buildStudentGroups() {
-  const males = [], females = [], unknowns = [];
+  let males = [], females = [], unknowns = [];
   for (const p of state.names) {
     if (p.gender === '男') males.push(p.name);
     else if (p.gender === '女') females.push(p.name);
     else unknowns.push(p.name);
   }
+
+  // 随机打乱各性别名单，确保每次「谁和谁同桌」的组合都不同
+  males = shuffle(males);
+  females = shuffle(females);
+  unknowns = shuffle(unknowns);
 
   const groups = [];
 
