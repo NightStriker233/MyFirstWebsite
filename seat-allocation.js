@@ -2,7 +2,8 @@
  * 座位分配器 seat-allocation.js
  * - 可视化绘制教室座位布局（座位 / 空位，同桌分组自动留过道）
  * - 空格分隔输入名单，Fisher-Yates 随机分配
- * - 逐个座位动画演示（可跳过），结果可复制
+ * - 翻牌动画逐个揭晓（可跳过），结果直接显示在网格上
+ * - 支持复制纯文本 / CSV 导出
  * 布局持久化于 localStorage；名单每次输入，不持久化。
  * ============================================================ */
 'use strict';
@@ -16,6 +17,7 @@ const PAINT_TYPES = ['seat', 'empty'];
 
 const DEFAULT_ROWS = 8;
 const DEFAULT_SEAT_COLS = 7; // 每排座位数（两列一组自动加过道列）
+const GAP_WIDTH = '16px';    // 过道列宽（窄）
 
 // 生成布局：每两列座位为一组（同桌），组与组之间插入一列过道(gap)
 function buildLayout(rows, seatCols) {
@@ -49,9 +51,10 @@ const state = {
   assigning: false,    // 是否正在动画分配中
   animTimer: null,     // 动画定时器句柄
   animIndex: 0,        // 动画当前进度
+  animCells: [],       // 待翻牌的格子列表
   names: [],           // 本次解析出的名单
-  assigned: null,      // 本次分配结果 Map<"r,c", name>
-  lastResultText: '',  // 最近一次结果文本（供复制）
+  assigned: null,      // 分配结果 Map<"r,c", name>；null = 未分配
+  filled: false,       // 是否已完成一次分配（网格显示名字）
 };
 
 /* ---------------- DOM 缓存 ---------------- */
@@ -64,17 +67,13 @@ function cacheDom() {
   dom.genGridBtn = document.getElementById('genGridBtn');
   dom.resetLayoutBtn = document.getElementById('resetLayoutBtn');
   dom.seatGrid = document.getElementById('seatGrid');
+  dom.seatStatus = document.getElementById('seatStatus');
   dom.nameInput = document.getElementById('nameInput');
   dom.nameCount = document.getElementById('nameCount');
   dom.startBtn = document.getElementById('startBtn');
   dom.skipBtn = document.getElementById('skipBtn');
-  dom.againBtn = document.getElementById('againBtn');
-  dom.copyBtn = document.getElementById('copyBtn');
-  dom.seatResult = document.getElementById('seatResult');
-  dom.resultGrid = document.getElementById('resultGrid');
-  dom.resultStats = document.getElementById('resultStats');
-  dom.resultText = document.getElementById('resultText');
-  dom.copyTip = document.getElementById('copyTip');
+  dom.copyTextBtn = document.getElementById('copyTextBtn');
+  dom.copyCsvBtn = document.getElementById('copyCsvBtn');
 }
 
 /* ---------------- localStorage ---------------- */
@@ -121,6 +120,15 @@ function cellLabel(type) {
   }
 }
 
+// 按列类型设置列宽模板：座位列弹性自适应，过道列固定窄
+function setGridColumns() {
+  const widths = [];
+  for (let c = 0; c < state.cols; c++) {
+    widths.push(state.grid[0][c] === 'gap' ? GAP_WIDTH : 'minmax(26px, 1fr)');
+  }
+  dom.seatGrid.style.gridTemplateColumns = widths.join(' ');
+}
+
 // 按输入的行列数生成「座位 + 过道」网格
 function genGrid() {
   const rows = clamp(parseInt(dom.rowInput.value, 10) || 0, 1, 20);
@@ -133,6 +141,8 @@ function genGrid() {
   state.cols = layout.grid[0].length;
   state.grid = layout.grid;
   saveLayout();
+  clearAssignment(true);
+  setGridColumns();
   renderSeatGrid();
 }
 
@@ -145,12 +155,13 @@ function resetLayout() {
   dom.rowInput.value = state.rows;
   dom.colInput.value = state.seatCols;
   saveLayout();
+  clearAssignment(true);
+  setGridColumns();
   renderSeatGrid();
 }
 
-// 渲染 #seatGrid（编辑器网格）
+// 渲染 #seatGrid（类型视图：座位/空位/过道）
 function renderSeatGrid() {
-  dom.seatGrid.style.setProperty('--cols', state.cols);
   dom.seatGrid.innerHTML = '';
   for (let r = 0; r < state.rows; r++) {
     for (let c = 0; c < state.cols; c++) {
@@ -182,6 +193,7 @@ function onGridMouseDown(e) {
   const cell = e.target.closest('.seat-cell');
   if (!cell) return;
   e.preventDefault();
+  if (state.filled) clearAssignment(true); // 编辑布局时清空已分配结果
   state.painting = true;
   applyPaint(parseInt(cell.dataset.row, 10), parseInt(cell.dataset.col, 10));
 }
@@ -215,6 +227,7 @@ function updateNameCount() {
   dom.nameCount.innerHTML = '已识别 <strong>' + names.length + '</strong> 人'
     + (warn ? '（超过座位数 <strong>' + seatSlotCount() + '</strong>，多出的人不会被分配）' : '');
   dom.nameCount.classList.toggle('warn', warn);
+  updateStatus();
   return names.length;
 }
 
@@ -245,9 +258,9 @@ function assignSeats() {
   return assigned;
 }
 
-/* ---------------- 演示动画与结果展示 ---------------- */
+/* ---------------- 演示动画（翻牌揭晓） ---------------- */
 
-// 清空座位格，收集待填充的格子（按行优先，只含 seat 且被分配名字的）
+// 将待分配座位设为「背面」状态并收集翻牌列表（不提前显示名字）
 function prepareAnimCells(assigned) {
   const cells = [];
   for (let r = 0; r < state.rows; r++) {
@@ -256,16 +269,21 @@ function prepareAnimCells(assigned) {
       if (!cell) continue;
       if (state.grid[r][c] === 'seat') {
         const name = assigned.get(r + ',' + c) || '';
-        cell.className = 'seat-cell type-seat' + (name ? ' filled' : '');
-        cell.textContent = name;
-        if (name) cells.push({ cell, name });
+        if (name) {
+          cell.className = 'seat-cell type-seat pending'; // 背面
+          cell.textContent = '?';
+          cells.push({ cell, name });
+        } else {
+          cell.className = 'seat-cell type-seat';
+          cell.textContent = '';
+        }
       }
     }
   }
   return cells;
 }
 
-// 开始分配：解析名单 → 洗牌 → 逐格动画
+// 开始分配：解析名单 → 洗牌 → 翻牌动画
 function startAssign() {
   if (state.assigning) return;
   const names = parseNames();
@@ -287,9 +305,11 @@ function startAssign() {
   state.assigning = true;
   state.animCells = animCells;
   state.animIndex = 0;
-  dom.startBtn.classList.add('running');
+  dom.startBtn.disabled = true;
   dom.skipBtn.disabled = false;
-  dom.seatResult.classList.remove('visible');
+  dom.copyTextBtn.disabled = true;
+  dom.copyCsvBtn.disabled = true;
+  updateStatus();
 
   state.animTimer = setInterval(() => {
     if (state.animIndex >= state.animCells.length) {
@@ -298,12 +318,12 @@ function startAssign() {
       return;
     }
     const { cell, name } = state.animCells[state.animIndex++];
-    cell.className = 'seat-cell type-seat filled anim-pop';
+    cell.className = 'seat-cell type-seat filled flip'; // 翻牌
     cell.textContent = name;
-  }, 250);
+  }, 260);
 }
 
-// 跳过动画：立即填完所有格子
+// 跳过动画：立即翻完所有牌
 function skipAnim() {
   if (!state.assigning) return;
   clearInterval(state.animTimer);
@@ -314,83 +334,105 @@ function skipAnim() {
   finishAssign();
 }
 
-// 动画结束收尾：更新按钮状态并展示完整结果
+// 动画结束收尾：更新按钮状态与统计
 function finishAssign() {
   state.assigning = false;
   state.animCells = [];
-  dom.startBtn.classList.remove('running');
+  state.filled = true;
+  dom.startBtn.disabled = false;
+  dom.startBtn.textContent = '🔄 再抽一次';
   dom.skipBtn.disabled = true;
-  dom.againBtn.disabled = false;
-  dom.copyBtn.disabled = false;
-  showResult();
+  dom.copyTextBtn.disabled = false;
+  dom.copyCsvBtn.disabled = false;
+  updateStatus();
 }
+
+// 清空分配结果，恢复编辑模式（skipRender=true 时由调用方自行重渲染）
+function clearAssignment(skipRender) {
+  if (!state.filled && !state.assigned && !state.assigning) {
+    if (!skipRender) renderSeatGrid();
+    return;
+  }
+  if (state.assigning) clearInterval(state.animTimer);
+  state.assigning = false;
+  state.animCells = [];
+  state.assigned = null;
+  state.filled = false;
+  dom.startBtn.disabled = false;
+  dom.startBtn.textContent = '🎲 开始分配';
+  dom.skipBtn.disabled = true;
+  dom.copyTextBtn.disabled = true;
+  dom.copyCsvBtn.disabled = true;
+  if (!skipRender) {
+    renderSeatGrid();
+    updateStatus();
+  }
+}
+
+// 网格上方状态行：座位 / 已分配 / 空座 / 名单
+function updateStatus() {
+  const total = seatSlotCount();
+  const filled = state.filled && state.assigned ? state.assigned.size : 0;
+  dom.seatStatus.innerHTML = '座位 <strong>' + total + '</strong>'
+    + ' · 已分配 <strong>' + filled + '</strong>'
+    + ' · 空座 <strong>' + (total - filled) + '</strong>'
+    + ' · 名单 <strong>' + state.names.length + '</strong> 人';
+}
+
+/* ---------------- 导出 ---------------- */
 
 // 计算字符串显示宽度（中文等宽字符按 2 计）
 function displayWidth(s) {
   return [...s].reduce((n, ch) => n + (/[^\x00-\xff]/.test(ch) ? 2 : 1), 0);
 }
 
-// 生成可复制的纯文本座位表
+// 生成纯文本座位表（过道用空格，按显示宽度对齐）
 function buildResultText() {
   const rows = [];
   for (let r = 0; r < state.rows; r++) {
     const line = [];
     for (let c = 0; c < state.cols; c++) {
       const type = state.grid[r][c];
-      const name = state.assigned.get(r + ',' + c) || '';
+      const name = state.assigned ? (state.assigned.get(r + ',' + c) || '') : '';
       let text;
       if (type === 'seat') text = name || '空';
       else if (type === 'empty') text = '✕';
       else text = ' '; // gap 过道
       line.push(text);
     }
-    // 按显示宽度对齐（补空格）
     const maxW = Math.max(...line.map(displayWidth));
     rows.push(line.map((t) => t + ' '.repeat(maxW - displayWidth(t))).join(' ').trimEnd());
   }
   return rows.join('\n');
 }
 
-// 展示完整结果：静态结果网格 + 统计 + 纯文本
-function showResult() {
-  dom.resultGrid.style.setProperty('--cols', state.cols);
-  dom.resultGrid.innerHTML = '';
-  let filled = 0;
-  for (let r = 0; r < state.rows; r++) {
-    for (let c = 0; c < state.cols; c++) {
-      const type = state.grid[r][c];
-      const name = state.assigned.get(r + ',' + c) || '';
-      const cell = document.createElement('div');
-      if (type === 'seat' && name) {
-        cell.className = 'result-cell type-seat filled';
-        cell.textContent = name;
-        filled++;
-      } else if (type === 'seat') {
-        cell.className = 'result-cell type-seat';
-        cell.textContent = '';
-      } else {
-        cell.className = 'result-cell type-' + type;
-        cell.textContent = cellLabel(type);
-      }
-      dom.resultGrid.appendChild(cell);
-    }
-  }
-  const total = seatSlotCount();
-  dom.resultStats.innerHTML = '座位数 <strong>' + total + '</strong>'
-    + ' · 已分配 <strong>' + filled + '</strong>'
-    + ' · 空座 <strong>' + (total - filled) + '</strong>'
-    + ' · 名单 <strong>' + state.names.length + '</strong> 人';
-  dom.resultText.value = buildResultText();
-  dom.seatResult.classList.add('visible');
-  dom.seatResult.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+function csvEscape(s) {
+  if (/[",\r\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+  return s;
 }
 
-// 复制纯文本结果到剪贴板
-function copyResult() {
-  const text = dom.resultText.value;
+// 生成 CSV（Excel 可直接打开；过道/空位留空，带 BOM 防中文乱码）
+function buildCsv() {
+  const rows = [];
+  for (let r = 0; r < state.rows; r++) {
+    const line = [];
+    for (let c = 0; c < state.cols; c++) {
+      const type = state.grid[r][c];
+      if (type !== 'seat') { line.push(''); continue; }
+      const name = state.assigned ? (state.assigned.get(r + ',' + c) || '') : '';
+      line.push(csvEscape(name));
+    }
+    rows.push(line.join(','));
+  }
+  return '\uFEFF' + rows.join('\r\n');
+}
+
+// 复制到剪贴板（优先 Clipboard API，失败回退 execCommand）
+function copyText(text, btn) {
+  const orig = btn.textContent;
   const done = () => {
-    dom.copyTip.classList.add('show');
-    setTimeout(() => dom.copyTip.classList.remove('show'), 2000);
+    btn.textContent = '✓ 已复制';
+    setTimeout(() => { btn.textContent = orig; }, 1500);
   };
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
@@ -400,13 +442,27 @@ function copyResult() {
 }
 
 function fallbackCopy(text, done) {
-  dom.resultText.style.display = 'block';
-  dom.resultText.select();
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
   try {
     document.execCommand('copy');
     done();
   } catch (e) { /* 忽略 */ }
-  dom.resultText.style.display = 'none';
+  document.body.removeChild(ta);
+}
+
+function copyResultText() {
+  if (!state.filled || !state.assigned) return;
+  copyText(buildResultText(), dom.copyTextBtn);
+}
+
+function copyResultCsv() {
+  if (!state.filled || !state.assigned) return;
+  copyText(buildCsv(), dom.copyCsvBtn);
 }
 
 /* ---------------- 事件绑定 ---------------- */
@@ -432,11 +488,11 @@ function bindEvents() {
   // 名单实时统计
   dom.nameInput.addEventListener('input', updateNameCount);
 
-  // 分配与结果
+  // 分配、跳过、导出
   dom.startBtn.addEventListener('click', startAssign);
   dom.skipBtn.addEventListener('click', skipAnim);
-  dom.againBtn.addEventListener('click', startAssign);
-  dom.copyBtn.addEventListener('click', copyResult);
+  dom.copyTextBtn.addEventListener('click', copyResultText);
+  dom.copyCsvBtn.addEventListener('click', copyResultCsv);
 }
 
 /* ---------------- 启动 ---------------- */
@@ -458,7 +514,9 @@ function init() {
   dom.rowInput.value = state.rows;
   dom.colInput.value = state.seatCols;
   bindEvents();
+  setGridColumns();
   renderSeatGrid();
+  updateStatus();
 }
 
 document.addEventListener('DOMContentLoaded', init);
