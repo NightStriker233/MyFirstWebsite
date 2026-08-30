@@ -322,7 +322,7 @@
     <div class="container">
 
       <h1 class="tools-title">🪑 座位分配</h1>
-      <p class="seat-desc">两列同桌一组，组间过道。输入名单，一键随机分配（翻牌揭晓）。</p>
+      <p class="seat-desc">输入行列数与学生姓名即可分配，如有特殊情况可使用「空位」来调整。保证分配随机。</p>
 
       <!-- 布局与结果（合二为一：分配结果直接显示在网格上） -->
       <div class="seat-card">
@@ -338,7 +338,7 @@
         <div class="paint-toolbar">
           <button class="paint-btn active" data-paint="seat"><span class="paint-swatch" style="background:#FFFFFF"></span>座位</button>
           <button class="paint-btn" data-paint="empty"><span class="paint-swatch" style="background:#FFFFFF"></span>空位</button>
-          <span class="paint-hint">💡 点击或拖拽涂格子；窄间隙为固定过道，不可绘制。分配结果出来后布局将锁定，需「清空结果」后重新编辑</span>
+          <span class="paint-hint">💡 点击或拖拽涂格子；窄间隙为固定过道，不可绘制。「下载表格」可以一键下载表格，也可以使用「复制表格」粘贴到 Excel 中使用。</span>
         </div>
 
         <div class="seat-status" id="seatStatus"></div>
@@ -370,8 +370,8 @@
         <button class="btn-seat btn-seat-lg" id="skipBtn" disabled>⏭ 跳过动画</button>
         <button class="btn-seat btn-seat-lg" id="clearBtn" disabled>🧹 清空结果</button>
         <button class="btn-seat btn-seat-lg" id="copyTextBtn" disabled>📋 复制文本</button>
-        <button class="btn-seat btn-seat-lg" id="copyExcelBtn" disabled>📋 复制 Excel</button>
-        <button class="btn-seat btn-seat-lg" id="downloadCsvBtn" disabled>⬇️ 下载 CSV</button>
+        <button class="btn-seat btn-seat-lg" id="copyExcelBtn" disabled>📋 复制表格</button>
+        <button class="btn-seat btn-seat-lg" id="downloadCsvBtn" disabled>⬇️ 下载表格</button>
       </div>
 
     </div>
