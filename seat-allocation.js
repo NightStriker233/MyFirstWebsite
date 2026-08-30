@@ -11,13 +11,13 @@
 
 /* ---------------- 常量 ---------------- */
 
-const STORAGE_KEY = 'seatAllocationLayout_v2';
+const STORAGE_KEY = 'seatAllocationLayout_v3';
 
 // 画笔类型：只有 seat 参与分配；gap 为固定过道列，不可绘制
 const PAINT_TYPES = ['seat', 'empty'];
 
-const DEFAULT_ROWS = 8;
-const DEFAULT_SEAT_COLS = 7; // 每排座位数（两列一组自动加过道列）
+const DEFAULT_ROWS = 6;
+const DEFAULT_SEAT_COLS = 8; // 每排座位数（两列一组自动加过道列）
 const GAP_WIDTH = '16px';    // 过道列宽（窄）
 
 // 生成布局：每两列座位为一组（同桌），组与组之间插入一列过道(gap)
