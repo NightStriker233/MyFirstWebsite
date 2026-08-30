@@ -1,7 +1,7 @@
 {
   "name": "my-first-website",
   "version": "2.0.0",
-  "description": "NightStriker 个人网站 - 留言板 + 博客",
+  "description": "NightStriker 个人网站 - 博客 + 工具箱",
   "type": "module",
   "dependencies": {
     "pg": "^8.13.1"

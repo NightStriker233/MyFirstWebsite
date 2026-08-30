@@ -1,6 +1,4 @@
 const POSTS_API = '/api/posts';
-const COMMENTS_API = '/api/blog-comments';
-const BLOG_REPLIES_API = '/api/blog-replies';
 
 // 配置 marked
 marked.setOptions({
@@ -23,7 +21,6 @@ const showEditorBtn = document.getElementById('showEditorBtn');
 
 let authPassword = localStorage.getItem('blog_key') || '';
 let editingPostId = null; // null = 新建, number = 编辑
-let currentPostId = null; // 当前查看的文章 ID
 
 // 如果有 key → 显示管理按钮；没有 → 隐藏
 if (authPassword) {
@@ -188,9 +185,6 @@ async function loadPostDetail(id) {
     }
     // 生成目录
     generateTOC(postFull);
-    // 加载评论
-    currentPostId = id;
-    loadComments(id);
     showDetail();
   } catch (err) {
     alert('加载文章失败：' + err.message);
@@ -326,20 +320,6 @@ document.getElementById('backToListFromEditor').addEventListener('click', (e) =>
 document.getElementById('backToListFromDetail').addEventListener('click', (e) => { e.preventDefault(); showList(); });
 
 // ---- 工具函数 ----
-function applyCollapse(container) {
-  const MAX = 7.2 * parseFloat(getComputedStyle(document.documentElement).fontSize);
-  const items = container.querySelectorAll('.comment-content, .reply-content');
-  items.forEach(el => {
-    if (el.scrollHeight > MAX + 4) {
-      el.classList.add('collapsed');
-      const btn = document.createElement('button');
-      btn.className = 'expand-btn';
-      btn.textContent = '展开 ▼';
-      el.insertAdjacentElement('afterend', btn);
-    }
-  });
-}
-
 function escapeHtml(str) {
   var div = document.createElement('div');
   div.textContent = str;
@@ -354,183 +334,6 @@ function formatDate(dateStr) {
 
 // ---- 初始化 ----
 document.addEventListener('DOMContentLoaded', loadPosts);
-
-// ====== 博客评论区 ======
-
-// 加载文章评论
-async function loadComments(postId) {
-  const list = document.getElementById('blogCommentsList');
-  list.innerHTML = '<div class="loading-state"><div class="loading-spinner"></div><p>加载评论…</p></div>';
-  try {
-    const res = await fetch(COMMENTS_API + '?post_id=' + postId);
-    const data = await res.json();
-    renderComments(data.comments || []);
-  } catch (err) {
-    list.innerHTML = '<p style="color:#94A3B8;text-align:center;padding:20px">评论加载失败</p>';
-  }
-}
-
-function renderComments(comments) {
-  const list = document.getElementById('blogCommentsList');
-  if (comments.length === 0) {
-    list.innerHTML = '<p class="no-comments">还没有评论，快来发表第一条吧 ✨</p>';
-    return;
-  }
-  list.innerHTML = comments.map(c => `
-    <div class="blog-comment">
-      <div class="comment-avatar">${getAvatar(c.name)}</div>
-      <div class="comment-body">
-        <div class="comment-header">
-          <span class="comment-name">${escapeHtml(c.name || '匿名')}</span>
-          <span class="comment-time">${formatDate(c.created_at)}</span>
-        </div>
-        <div class="comment-content">${escapeHtml(c.content)}</div>
-        <div class="comment-actions">
-          <button class="reply-toggle-btn" data-comment-id="${c.id}">💬 回复${c.reply_count > 0 ? ' (' + c.reply_count + ')' : ''}</button>
-        </div>
-        <div class="replies-section" id="replies-${c.id}" style="display:none"></div>
-        <div class="reply-form" id="replyForm-${c.id}" style="display:none">
-          <input type="text" class="reply-name-input" id="replyName-${c.id}" placeholder="你的名字（选填）" maxlength="50">
-          <textarea class="reply-content-input" id="replyContent-${c.id}" placeholder="写下你的回复…" rows="2" maxlength="300"></textarea>
-          <button class="reply-submit-btn" data-comment-id="${c.id}">发送回复</button>
-        </div>
-      </div>
-    </div>
-  `).join('');
-  applyCollapse(list);
-
-  // 绑定回复按钮
-  list.querySelectorAll('.reply-toggle-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const cid = btn.dataset.commentId;
-      const repliesDiv = document.getElementById('replies-' + cid);
-      const formDiv = document.getElementById('replyForm-' + cid);
-      const isOpen = repliesDiv.style.display !== 'none';
-      if (isOpen) {
-        repliesDiv.style.display = 'none';
-        formDiv.style.display = 'none';
-      } else {
-        repliesDiv.style.display = 'block';
-        formDiv.style.display = 'block';
-        loadReplies(cid);
-      }
-    });
-  });
-
-  // 绑定回复提交
-  list.querySelectorAll('.reply-submit-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const cid = btn.dataset.commentId;
-      submitReply(cid);
-    });
-  });
-
-  // 绑定展开按钮
-  list.querySelectorAll('.expand-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const content = btn.previousElementSibling;
-      if (content) {
-        content.classList.toggle('collapsed');
-        btn.textContent = content.classList.contains('collapsed') ? '展开 ▼' : '收起 ▲';
-      }
-    });
-  });
-}
-
-// 加载回复
-async function loadReplies(commentId) {
-  const div = document.getElementById('replies-' + commentId);
-  try {
-    const res = await fetch(BLOG_REPLIES_API + '?comment_id=' + commentId);
-    const data = await res.json();
-    const replies = data.replies || [];
-    if (replies.length === 0) {
-      div.innerHTML = '<p style="color:#94A3B8;font-size:0.85rem;padding:8px 0">暂无回复</p>';
-    } else {
-      div.innerHTML = replies.map(r => `
-        <div class="blog-reply">
-          <span class="reply-name">${escapeHtml(r.name || '匿名')}</span>
-          <span class="reply-time">${formatDate(r.created_at)}</span>
-          <span class="reply-content">${escapeHtml(r.content)}</span>
-        </div>
-      `).join('');
-      applyCollapse(div);
-    }
-    // 绑定回复中的展开按钮
-    div.querySelectorAll('.expand-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const content = btn.previousElementSibling;
-        if (content) {
-          content.classList.toggle('collapsed');
-          btn.textContent = content.classList.contains('collapsed') ? '展开 ▼' : '收起 ▲';
-        }
-      });
-    });
-  } catch (err) {
-    div.innerHTML = '<p style="color:#DC2626;font-size:0.85rem">加载失败</p>';
-  }
-}
-
-// 提交评论
-async function submitComment() {
-  const nameInput = document.getElementById('blogCommentName');
-  const contentInput = document.getElementById('blogCommentContent');
-  const btn = document.getElementById('blogCommentSubmit');
-  const name = nameInput.value.trim() || '匿名';
-  const content = contentInput.value.trim();
-  if (!content) return;
-  if (!currentPostId) return;
-  btn.disabled = true;
-  btn.textContent = '发送中…';
-  try {
-    const res = await fetch(COMMENTS_API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ post_id: currentPostId, name, content })
-    });
-    if (!res.ok) throw new Error('发送失败');
-    nameInput.value = '';
-    contentInput.value = '';
-    loadComments(currentPostId);
-  } catch (err) {
-    alert('评论发送失败：' + err.message);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '发表评论';
-  }
-}
-
-// 提交回复
-async function submitReply(commentId) {
-  const nameInput = document.getElementById('replyName-' + commentId);
-  const contentInput = document.getElementById('replyContent-' + commentId);
-  const name = (nameInput.value || '').trim() || '匿名';
-  const content = contentInput.value.trim();
-  if (!content) return;
-  try {
-    const res = await fetch(BLOG_REPLIES_API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ comment_id: commentId, name, content })
-    });
-    if (!res.ok) throw new Error('发送失败');
-    nameInput.value = '';
-    contentInput.value = '';
-    loadReplies(commentId);
-    // 刷新评论列表以更新回复计数
-    if (currentPostId) loadComments(currentPostId);
-  } catch (err) {
-    alert('回复发送失败：' + err.message);
-  }
-}
-
-// 头像生成
-function getAvatar(name) {
-  const colors = ['#E88D5A','#D4753B','#F4A261','#E76F51','#F5A07A'];
-  const idx = (name || '?').charCodeAt(0) % colors.length;
-  const letter = (name || '?')[0].toUpperCase();
-  return '<span class="avatar-badge" style="background:' + colors[idx] + '">' + letter + '</span>';
-}
 
 // ---- 文章目录生成 ----
 function generateTOC(container) {
@@ -550,14 +353,4 @@ function generateTOC(container) {
   document.querySelector('.post-detail-layout').classList.add('has-toc');
 }
 
-// 绑定评论提交事件
-document.addEventListener('DOMContentLoaded', function() {
-  document.getElementById('blogCommentSubmit').addEventListener('click', submitComment);
-  // Enter 快捷提交（Ctrl+Enter）
-  document.getElementById('blogCommentContent').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-      e.preventDefault();
-      submitComment();
-    }
-  });
-});
+
