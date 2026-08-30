@@ -3,7 +3,8 @@
  * - 可视化绘制教室座位布局（座位 / 空位，同桌分组自动留过道）
  * - 空格分隔输入名单，Fisher-Yates 随机分配
  * - 翻牌动画逐个揭晓（可跳过），结果直接显示在网格上
- * - 支持复制纯文本 / CSV 导出
+ * - 结果出来后锁定布局编辑，可清空结果重新编辑
+ * - 导出：纯文本 / 制表符表格（Excel 粘贴分列）/ 下载 CSV 文件
  * 布局持久化于 localStorage；名单每次输入，不持久化。
  * ============================================================ */
 'use strict';
@@ -54,7 +55,7 @@ const state = {
   animCells: [],       // 待翻牌的格子列表
   names: [],           // 本次解析出的名单
   assigned: null,      // 分配结果 Map<"r,c", name>；null = 未分配
-  filled: false,       // 是否已完成一次分配（网格显示名字）
+  filled: false,       // 是否已完成一次分配（网格显示名字，布局锁定）
 };
 
 /* ---------------- DOM 缓存 ---------------- */
@@ -72,8 +73,10 @@ function cacheDom() {
   dom.nameCount = document.getElementById('nameCount');
   dom.startBtn = document.getElementById('startBtn');
   dom.skipBtn = document.getElementById('skipBtn');
+  dom.clearBtn = document.getElementById('clearBtn');
   dom.copyTextBtn = document.getElementById('copyTextBtn');
-  dom.copyCsvBtn = document.getElementById('copyCsvBtn');
+  dom.copyExcelBtn = document.getElementById('copyExcelBtn');
+  dom.downloadCsvBtn = document.getElementById('downloadCsvBtn');
 }
 
 /* ---------------- localStorage ---------------- */
@@ -189,17 +192,16 @@ function applyPaint(r, c) {
 }
 
 function onGridMouseDown(e) {
-  if (state.assigning) return;
+  if (state.assigning || state.filled) return; // 动画中/结果出来后不可编辑
   const cell = e.target.closest('.seat-cell');
   if (!cell) return;
   e.preventDefault();
-  if (state.filled) clearAssignment(true); // 编辑布局时清空已分配结果
   state.painting = true;
   applyPaint(parseInt(cell.dataset.row, 10), parseInt(cell.dataset.col, 10));
 }
 
 function onGridMouseOver(e) {
-  if (!state.painting || state.assigning) return;
+  if (!state.painting || state.assigning || state.filled) return;
   const cell = e.target.closest('.seat-cell');
   if (!cell) return;
   applyPaint(parseInt(cell.dataset.row, 10), parseInt(cell.dataset.col, 10));
@@ -258,6 +260,17 @@ function assignSeats() {
   return assigned;
 }
 
+/* ---------------- 编辑锁定 ---------------- */
+
+// 结果出来后 / 动画中锁定布局编辑；「清空结果」可解锁
+function updateEditLock() {
+  const locked = state.assigning || state.filled;
+  dom.genGridBtn.disabled = locked;
+  dom.resetLayoutBtn.disabled = locked;
+  document.querySelectorAll('.paint-btn').forEach((b) => { b.disabled = locked; });
+  dom.clearBtn.disabled = !state.filled;
+}
+
 /* ---------------- 演示动画（翻牌揭晓） ---------------- */
 
 // 将待分配座位设为「背面」状态并收集翻牌列表（不提前显示名字）
@@ -308,7 +321,9 @@ function startAssign() {
   dom.startBtn.disabled = true;
   dom.skipBtn.disabled = false;
   dom.copyTextBtn.disabled = true;
-  dom.copyCsvBtn.disabled = true;
+  dom.copyExcelBtn.disabled = true;
+  dom.downloadCsvBtn.disabled = true;
+  updateEditLock();
   updateStatus();
 
   state.animTimer = setInterval(() => {
@@ -334,7 +349,7 @@ function skipAnim() {
   finishAssign();
 }
 
-// 动画结束收尾：更新按钮状态与统计
+// 动画结束收尾：更新按钮状态与统计（布局锁定）
 function finishAssign() {
   state.assigning = false;
   state.animCells = [];
@@ -343,13 +358,16 @@ function finishAssign() {
   dom.startBtn.textContent = '🔄 再抽一次';
   dom.skipBtn.disabled = true;
   dom.copyTextBtn.disabled = false;
-  dom.copyCsvBtn.disabled = false;
+  dom.copyExcelBtn.disabled = false;
+  dom.downloadCsvBtn.disabled = false;
+  updateEditLock();
   updateStatus();
 }
 
-// 清空分配结果，恢复编辑模式（skipRender=true 时由调用方自行重渲染）
+// 清空分配结果，恢复编辑模式
 function clearAssignment(skipRender) {
   if (!state.filled && !state.assigned && !state.assigning) {
+    updateEditLock();
     if (!skipRender) renderSeatGrid();
     return;
   }
@@ -362,7 +380,9 @@ function clearAssignment(skipRender) {
   dom.startBtn.textContent = '🎲 开始分配';
   dom.skipBtn.disabled = true;
   dom.copyTextBtn.disabled = true;
-  dom.copyCsvBtn.disabled = true;
+  dom.copyExcelBtn.disabled = true;
+  dom.downloadCsvBtn.disabled = true;
+  updateEditLock();
   if (!skipRender) {
     renderSeatGrid();
     updateStatus();
@@ -411,8 +431,8 @@ function csvEscape(s) {
   return s;
 }
 
-// 生成 CSV（Excel 可直接打开；过道/空位留空，带 BOM 防中文乱码）
-function buildCsv() {
+// 生成 CSV 文件内容（逗号分隔 + BOM，供下载）
+function buildCsvFile() {
   const rows = [];
   for (let r = 0; r < state.rows; r++) {
     const line = [];
@@ -425,6 +445,21 @@ function buildCsv() {
     rows.push(line.join(','));
   }
   return '\uFEFF' + rows.join('\r\n');
+}
+
+// 生成制表符分隔表格（Excel 粘贴时自动分列）
+function buildTsv() {
+  const rows = [];
+  for (let r = 0; r < state.rows; r++) {
+    const line = [];
+    for (let c = 0; c < state.cols; c++) {
+      const type = state.grid[r][c];
+      if (type !== 'seat') { line.push(''); continue; }
+      line.push(state.assigned ? (state.assigned.get(r + ',' + c) || '') : '');
+    }
+    rows.push(line.join('\t'));
+  }
+  return rows.join('\r\n');
 }
 
 // 复制到剪贴板（优先 Clipboard API，失败回退 execCommand）
@@ -460,9 +495,23 @@ function copyResultText() {
   copyText(buildResultText(), dom.copyTextBtn);
 }
 
-function copyResultCsv() {
+function copyResultExcel() {
   if (!state.filled || !state.assigned) return;
-  copyText(buildCsv(), dom.copyCsvBtn);
+  copyText(buildTsv(), dom.copyExcelBtn);
+}
+
+// 下载 .csv 文件（Excel 打开不乱码、自动分列）
+function downloadCsv() {
+  if (!state.filled || !state.assigned) return;
+  const blob = new Blob([buildCsvFile()], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '座位表.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 /* ---------------- 事件绑定 ---------------- */
@@ -470,6 +519,7 @@ function copyResultCsv() {
 function bindEvents() {
   dom.genGridBtn.addEventListener('click', genGrid);
   dom.resetLayoutBtn.addEventListener('click', resetLayout);
+  dom.clearBtn.addEventListener('click', () => clearAssignment(false));
 
   // 画笔切换
   const paintBtns = document.querySelectorAll('.paint-btn');
@@ -492,7 +542,8 @@ function bindEvents() {
   dom.startBtn.addEventListener('click', startAssign);
   dom.skipBtn.addEventListener('click', skipAnim);
   dom.copyTextBtn.addEventListener('click', copyResultText);
-  dom.copyCsvBtn.addEventListener('click', copyResultCsv);
+  dom.copyExcelBtn.addEventListener('click', copyResultExcel);
+  dom.downloadCsvBtn.addEventListener('click', downloadCsv);
 }
 
 /* ---------------- 启动 ---------------- */
@@ -516,6 +567,7 @@ function init() {
   bindEvents();
   setGridColumns();
   renderSeatGrid();
+  updateEditLock();
   updateStatus();
 }
 

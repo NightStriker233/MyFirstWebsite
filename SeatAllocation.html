@@ -156,7 +156,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.7rem;
+      font-size: 0.8rem;
       font-weight: 500;
       text-align: center;
       padding: 0 2px;
@@ -203,7 +203,7 @@
       background: #FFFFFF;
       border: 1px dashed #D1D5DB;
       color: #D1D5DB;
-      font-size: 0.65rem;
+      font-size: 0.72rem;
     }
 
     .seat-cell.type-gap {
@@ -338,7 +338,7 @@
         <div class="paint-toolbar">
           <button class="paint-btn active" data-paint="seat"><span class="paint-swatch" style="background:#FFFFFF"></span>座位</button>
           <button class="paint-btn" data-paint="empty"><span class="paint-swatch" style="background:#FFFFFF"></span>空位</button>
-          <span class="paint-hint">💡 点击或拖拽涂格子；窄间隙为固定过道，不可绘制</span>
+          <span class="paint-hint">💡 点击或拖拽涂格子；窄间隙为固定过道，不可绘制。分配结果出来后布局将锁定，需「清空结果」后重新编辑</span>
         </div>
 
         <div class="seat-status" id="seatStatus"></div>
@@ -368,8 +368,10 @@
       <div class="seat-actions">
         <button class="btn-seat btn-seat-primary btn-seat-lg" id="startBtn">🎲 开始分配</button>
         <button class="btn-seat btn-seat-lg" id="skipBtn" disabled>⏭ 跳过动画</button>
+        <button class="btn-seat btn-seat-lg" id="clearBtn" disabled>🧹 清空结果</button>
         <button class="btn-seat btn-seat-lg" id="copyTextBtn" disabled>📋 复制文本</button>
-        <button class="btn-seat btn-seat-lg" id="copyCsvBtn" disabled>📄 复制 CSV</button>
+        <button class="btn-seat btn-seat-lg" id="copyExcelBtn" disabled>📋 复制 Excel</button>
+        <button class="btn-seat btn-seat-lg" id="downloadCsvBtn" disabled>⬇️ 下载 CSV</button>
       </div>
 
     </div>
