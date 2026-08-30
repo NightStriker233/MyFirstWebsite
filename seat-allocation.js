@@ -1,6 +1,6 @@
 /* ============================================================
  * 座位分配器 seat-allocation.js
- * - 可视化绘制教室座位布局（座位/空位/走廊/窗/讲台）
+ * - 可视化绘制教室座位布局（座位 / 空位，同桌分组自动留过道）
  * - 空格分隔输入名单，Fisher-Yates 随机分配
  * - 逐个座位动画演示（可跳过），结果可复制
  * 布局持久化于 localStorage；名单每次输入，不持久化。
@@ -9,33 +9,41 @@
 
 /* ---------------- 常量 ---------------- */
 
-const STORAGE_KEY = 'seatAllocationLayout_v1';
+const STORAGE_KEY = 'seatAllocationLayout_v2';
 
-// 画笔类型：只有 seat 参与分配
-const PAINT_TYPES = ['seat', 'empty', 'aisle', 'window', 'podium'];
+// 画笔类型：只有 seat 参与分配；gap 为固定过道列，不可绘制
+const PAINT_TYPES = ['seat', 'empty'];
 
-// 默认模板：8 行 × 7 列（第 0 行为讲台，首末列为窗，中间列为走廊）
-const DEFAULT_LAYOUT = (function () {
-  const rows = 8, cols = 7, grid = [];
+const DEFAULT_ROWS = 8;
+const DEFAULT_SEAT_COLS = 7; // 每排座位数（两列一组自动加过道列）
+
+// 生成布局：每两列座位为一组（同桌），组与组之间插入一列过道(gap)
+function buildLayout(rows, seatCols) {
+  const groups = Math.ceil(seatCols / 2);
+  const grid = [];
   for (let r = 0; r < rows; r++) {
     const row = [];
-    for (let c = 0; c < cols; c++) {
-      if (r === 0) row.push('podium');
-      else if (c === 0 || c === cols - 1) row.push('window');
-      else if (c === 3) row.push('aisle');
-      else row.push('seat');
+    let remaining = seatCols;
+    for (let g = 0; g < groups; g++) {
+      row.push('seat');
+      remaining--;
+      if (remaining > 0) { row.push('seat'); remaining--; }
+      if (g < groups - 1) row.push('gap');
     }
     grid.push(row);
   }
-  return { rows, cols, grid };
-})();
+  return { rows, seatCols, grid };
+}
+
+const DEFAULT_LAYOUT = buildLayout(DEFAULT_ROWS, DEFAULT_SEAT_COLS);
 
 /* ---------------- 状态 ---------------- */
 
 const state = {
   rows: DEFAULT_LAYOUT.rows,
-  cols: DEFAULT_LAYOUT.cols,
-  grid: null,          // rows × cols 二维数组，值为画笔类型
+  seatCols: DEFAULT_LAYOUT.seatCols,
+  cols: DEFAULT_LAYOUT.grid[0].length, // 总列数（含过道列）
+  grid: null,          // rows × cols 二维数组，值为 seat / empty / gap
   paint: 'seat',       // 当前画笔
   painting: false,     // 是否处于拖拽绘制中
   assigning: false,    // 是否正在动画分配中
@@ -77,6 +85,12 @@ function loadLayout() {
     if (!raw) return null;
     const data = JSON.parse(raw);
     if (!data || !Array.isArray(data.grid) || !data.grid.length) return null;
+    const validTypes = ['seat', 'empty', 'gap'];
+    const w = data.grid[0].length;
+    for (const row of data.grid) {
+      if (!Array.isArray(row) || row.length !== w) return null;
+      for (const t of row) if (!validTypes.includes(t)) return null;
+    }
     return data;
   } catch (e) {
     return null;
@@ -87,7 +101,7 @@ function saveLayout() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       rows: state.rows,
-      cols: state.cols,
+      seatCols: state.seatCols,
       grid: state.grid,
     }));
   } catch (e) { /* localStorage 不可用时静默忽略 */ }
@@ -102,34 +116,34 @@ function clamp(n, min, max) {
 // 每种格子类型的显示文字
 function cellLabel(type) {
   switch (type) {
-    case 'empty':  return '✕';
-    case 'aisle':  return '走廊';
-    case 'window': return '窗';
-    case 'podium': return '🎓 讲台';
-    default:       return '';
+    case 'empty': return '✕';
+    default:      return '';
   }
 }
 
-// 按输入的行列数生成全「座位」网格
+// 按输入的行列数生成「座位 + 过道」网格
 function genGrid() {
   const rows = clamp(parseInt(dom.rowInput.value, 10) || 0, 1, 20);
-  const cols = clamp(parseInt(dom.colInput.value, 10) || 0, 1, 20);
+  const seatCols = clamp(parseInt(dom.colInput.value, 10) || 0, 1, 20);
   dom.rowInput.value = rows;
-  dom.colInput.value = cols;
+  dom.colInput.value = seatCols;
   state.rows = rows;
-  state.cols = cols;
-  state.grid = Array.from({ length: rows }, () => Array(cols).fill('seat'));
+  state.seatCols = seatCols;
+  const layout = buildLayout(rows, seatCols);
+  state.cols = layout.grid[0].length;
+  state.grid = layout.grid;
   saveLayout();
   renderSeatGrid();
 }
 
-// 恢复默认模板（讲台 + 窗 + 走廊 + 座位）
+// 恢复默认布局（8 排，每排 7 座，两列一组自动过道）
 function resetLayout() {
   state.rows = DEFAULT_LAYOUT.rows;
-  state.cols = DEFAULT_LAYOUT.cols;
+  state.seatCols = DEFAULT_LAYOUT.seatCols;
+  state.cols = DEFAULT_LAYOUT.grid[0].length;
   state.grid = DEFAULT_LAYOUT.grid.map((row) => row.slice());
   dom.rowInput.value = state.rows;
-  dom.colInput.value = state.cols;
+  dom.colInput.value = state.seatCols;
   saveLayout();
   renderSeatGrid();
 }
@@ -150,9 +164,10 @@ function renderSeatGrid() {
   }
 }
 
-// 对指定格子应用当前画笔并持久化
+// 对指定格子应用当前画笔并持久化（过道列不可绘制）
 function applyPaint(r, c) {
   if (r < 0 || r >= state.rows || c < 0 || c >= state.cols) return;
+  if (state.grid[r][c] === 'gap') return;
   state.grid[r][c] = state.paint;
   const cell = dom.seatGrid.children[r * state.cols + c];
   if (cell) {
@@ -326,10 +341,7 @@ function buildResultText() {
       let text;
       if (type === 'seat') text = name || '空';
       else if (type === 'empty') text = '✕';
-      else if (type === 'aisle') text = '—';
-      else if (type === 'window') text = '窗';
-      else if (type === 'podium') text = '讲台';
-      else text = '';
+      else text = ' '; // gap 过道
       line.push(text);
     }
     // 按显示宽度对齐（补空格）
@@ -434,15 +446,17 @@ function init() {
   const saved = loadLayout();
   if (saved) {
     state.rows = saved.rows;
-    state.cols = saved.cols;
+    state.seatCols = saved.seatCols;
+    state.cols = saved.grid[0].length;
     state.grid = saved.grid;
   } else {
     state.rows = DEFAULT_LAYOUT.rows;
-    state.cols = DEFAULT_LAYOUT.cols;
+    state.seatCols = DEFAULT_LAYOUT.seatCols;
+    state.cols = DEFAULT_LAYOUT.grid[0].length;
     state.grid = DEFAULT_LAYOUT.grid.map((row) => row.slice());
   }
   dom.rowInput.value = state.rows;
-  dom.colInput.value = state.cols;
+  dom.colInput.value = state.seatCols;
   bindEvents();
   renderSeatGrid();
 }
