@@ -211,17 +211,34 @@ function onGridMouseOver(e) {
 
 /* ---------------- 名单解析与随机分配 ---------------- */
 
-// 解析名单：空格/换行/逗号/顿号/分号分隔；姓名后可带（男）/（女）标注
+// 解析名单：空格/换行/逗号/顿号/分号分隔；兼容多种性别标注写法
+// 支持：张三（男）/张三(男)（括号）、张三男（尾字）、张三 男（空格分隔）
+// 解析后名字一律不含「男」「女」字样，性别仅用于配对
 function parseNames() {
-  return dom.nameInput.value
+  const tokens = dom.nameInput.value
     .split(/[\s,，、;；]+/)
     .map((s) => s.trim())
-    .filter((s) => s.length > 0)
-    .map((s) => {
-      const m = s.match(/^(.+?)[（(]\s*(男|女)\s*[）)]$/);
-      if (m) return { name: m[1].trim(), gender: m[2] };
-      return { name: s, gender: '' };
-    });
+    .filter((s) => s.length > 0);
+
+  const names = [];
+  for (const t of tokens) {
+    // 1. 括号格式：张三（男）/张三(男)
+    const m = t.match(/^(.+?)[（(]\s*(男|女)\s*[）)]$/);
+    if (m) { names.push({ name: m[1].trim(), gender: m[2] }); continue; }
+
+    // 2. 独立的性别 token：张三 男 李四 女 → 绑定给前一个名字
+    if ((t === '男' || t === '女') && names.length > 0 && !names[names.length - 1].gender) {
+      names[names.length - 1].gender = t;
+      continue;
+    }
+
+    // 3. 名字尾字性别：张三男 / 李四女（两字以上才剥离，避免误伤单字名）
+    const tm = t.match(/^(.{2,})(男|女)$/);
+    if (tm) { names.push({ name: tm[1], gender: tm[2] }); continue; }
+
+    names.push({ name: t, gender: '' });
+  }
+  return names;
 }
 
 // 可用座位数（只有 seat 类型参与分配）
