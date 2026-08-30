@@ -1,10 +1,11 @@
 /* ============================================================
  * 座位分配器 seat-allocation.js
  * - 可视化绘制教室座位布局（座位 / 空位，同桌分组自动留过道）
- * - 空格分隔输入名单，Fisher-Yates 随机分配
+ * - 姓名支持「张三（男）」性别标注，男女同桌优先，
+ *   无法避免时同性同桌并以橙色标注
  * - 翻牌动画逐个揭晓（可跳过），结果直接显示在网格上
  * - 结果出来后锁定布局编辑，可清空结果重新编辑
- * - 导出：纯文本 / 制表符表格（Excel 粘贴分列）/ 下载 CSV 文件
+ * - 导出：纯文本（含同性标注）/ 制表符表格 / 下载 CSV 文件
  * 布局持久化于 localStorage；名单每次输入，不持久化。
  * ============================================================ */
 'use strict';
@@ -53,8 +54,9 @@ const state = {
   animTimer: null,     // 动画定时器句柄
   animIndex: 0,        // 动画当前进度
   animCells: [],       // 待翻牌的格子列表
-  names: [],           // 本次解析出的名单
+  names: [],           // 本次解析出的名单 [{name, gender}]
   assigned: null,      // 分配结果 Map<"r,c", name>；null = 未分配
+  sameSexKeys: null,   // 同性同桌的格子 key 集合
   filled: false,       // 是否已完成一次分配（网格显示名字，布局锁定）
 };
 
@@ -149,7 +151,7 @@ function genGrid() {
   renderSeatGrid();
 }
 
-// 恢复默认布局（8 排，每排 7 座，两列一组自动过道）
+// 恢复默认布局
 function resetLayout() {
   state.rows = DEFAULT_LAYOUT.rows;
   state.seatCols = DEFAULT_LAYOUT.seatCols;
@@ -209,12 +211,17 @@ function onGridMouseOver(e) {
 
 /* ---------------- 名单解析与随机分配 ---------------- */
 
-// 解析名单：空格/换行/逗号/顿号/分号均可分隔
+// 解析名单：空格/换行/逗号/顿号/分号分隔；姓名后可带（男）/（女）标注
 function parseNames() {
   return dom.nameInput.value
     .split(/[\s,，、;；]+/)
     .map((s) => s.trim())
-    .filter((s) => s.length > 0);
+    .filter((s) => s.length > 0)
+    .map((s) => {
+      const m = s.match(/^(.+?)[（(]\s*(男|女)\s*[）)]$/);
+      if (m) return { name: m[1].trim(), gender: m[2] };
+      return { name: s, gender: '' };
+    });
 }
 
 // 可用座位数（只有 seat 类型参与分配）
@@ -222,12 +229,18 @@ function seatSlotCount() {
   return state.grid.flat().filter((t) => t === 'seat').length;
 }
 
-// 实时统计名单人数
+// 实时统计名单人数（含性别分布）
 function updateNameCount() {
   const names = parseNames();
   const warn = names.length > seatSlotCount();
-  dom.nameCount.innerHTML = '已识别 <strong>' + names.length + '</strong> 人'
-    + (warn ? '（超过座位数 <strong>' + seatSlotCount() + '</strong>，多出的人不会被分配）' : '');
+  const males = names.filter((p) => p.gender === '男').length;
+  const females = names.filter((p) => p.gender === '女').length;
+  const unknown = names.length - males - females;
+  let info = '已识别 <strong>' + names.length + '</strong> 人（男 ' + males + ' · 女 ' + females;
+  if (unknown > 0) info += ' · 未标注 ' + unknown;
+  info += '）';
+  if (warn) info += '，超过座位数 <strong>' + seatSlotCount() + '</strong>，多出的人不会被分配';
+  dom.nameCount.innerHTML = info;
   dom.nameCount.classList.toggle('warn', warn);
   updateStatus();
   return names.length;
@@ -243,21 +256,85 @@ function shuffle(arr) {
   return a;
 }
 
-// 将名单随机填入可用座位：返回 Map<"r,c", name>，行优先填充
-function assignSeats() {
-  const slots = [];
+// 按行优先收集座位「同桌组」（每 2 个相邻座位一组）
+function collectSeatGroups() {
+  const groups = [];
   for (let r = 0; r < state.rows; r++) {
+    let pair = [];
     for (let c = 0; c < state.cols; c++) {
-      if (state.grid[r][c] === 'seat') slots.push([r, c]);
+      if (state.grid[r][c] === 'seat') {
+        pair.push([r, c]);
+        if (pair.length === 2) { groups.push(pair); pair = []; }
+      }
+    }
+    if (pair.length) groups.push(pair);
+  }
+  return groups;
+}
+
+// 按性别配对学生：男女同桌优先，剩余同类配对（标记同性），未知性别自由搭配
+function buildStudentGroups() {
+  const males = [], females = [], unknowns = [];
+  for (const p of state.names) {
+    if (p.gender === '男') males.push(p.name);
+    else if (p.gender === '女') females.push(p.name);
+    else unknowns.push(p.name);
+  }
+
+  const groups = [];
+
+  // 1. 男女同桌（优先）
+  while (males.length && females.length) {
+    groups.push({ seats: [males.pop(), females.pop()], sameSex: false });
+  }
+
+  // 2. 剩余同类配对（男多或女多），标注同性
+  const rest = males.length ? males : females;
+  while (rest.length >= 2) {
+    groups.push({ seats: [rest.pop(), rest.pop()], sameSex: true });
+  }
+
+  // 3. 剩余单人先与未标注性别者搭配
+  const leftover = [];
+  if (rest.length) leftover.push(rest.pop());
+  while (unknowns.length && leftover.length) {
+    groups.push({ seats: [leftover.pop(), unknowns.pop()], sameSex: false });
+  }
+
+  // 4. 未标注者两两搭配
+  while (unknowns.length >= 2) {
+    groups.push({ seats: [unknowns.pop(), unknowns.pop()], sameSex: false });
+  }
+  if (unknowns.length) leftover.push(unknowns.pop());
+
+  // 5. 总人数为奇数时，最后一人单独成组
+  if (leftover.length) {
+    groups.push({ seats: [leftover.pop()], sameSex: false });
+  }
+
+  // 随机化：组顺序与组内顺序都打乱
+  shuffle(groups);
+  for (const g of groups) shuffle(g.seats);
+  return groups;
+}
+
+// 将配对结果填入座位：返回 { assigned, sameSexKeys }
+function assignSeats() {
+  const seatGroups = collectSeatGroups();
+  const studentGroups = buildStudentGroups();
+  const assigned = new Map();
+  const sameSexKeys = new Set();
+  const n = Math.min(seatGroups.length, studentGroups.length);
+  for (let i = 0; i < n; i++) {
+    const sg = seatGroups[i];
+    const g = studentGroups[i];
+    for (let j = 0; j < g.seats.length && j < sg.length; j++) {
+      const [r, c] = sg[j];
+      assigned.set(r + ',' + c, g.seats[j]);
+      if (g.sameSex) sameSexKeys.add(r + ',' + c);
     }
   }
-  const shuffled = shuffle(state.names);
-  const assigned = new Map();
-  const count = Math.min(slots.length, shuffled.length);
-  for (let i = 0; i < count; i++) {
-    assigned.set(slots[i][0] + ',' + slots[i][1], shuffled[i]);
-  }
-  return assigned;
+  return { assigned, sameSexKeys };
 }
 
 /* ---------------- 编辑锁定 ---------------- */
@@ -274,7 +351,7 @@ function updateEditLock() {
 /* ---------------- 演示动画（翻牌揭晓） ---------------- */
 
 // 将待分配座位设为「背面」状态并收集翻牌列表（不提前显示名字）
-function prepareAnimCells(assigned) {
+function prepareAnimCells(assigned, sameSexKeys) {
   const cells = [];
   for (let r = 0; r < state.rows; r++) {
     for (let c = 0; c < state.cols; c++) {
@@ -283,9 +360,10 @@ function prepareAnimCells(assigned) {
       if (state.grid[r][c] === 'seat') {
         const name = assigned.get(r + ',' + c) || '';
         if (name) {
-          cell.className = 'seat-cell type-seat pending'; // 背面
+          const same = sameSexKeys.has(r + ',' + c);
+          cell.className = 'seat-cell type-seat pending';
           cell.textContent = '?';
-          cells.push({ cell, name });
+          cells.push({ cell, name, same });
         } else {
           cell.className = 'seat-cell type-seat';
           cell.textContent = '';
@@ -296,12 +374,18 @@ function prepareAnimCells(assigned) {
   return cells;
 }
 
-// 开始分配：解析名单 → 洗牌 → 翻牌动画
+// 填充名字到格子（含同性同桌标注）
+function fillCell(cell, name, same, withAnim) {
+  cell.className = 'seat-cell type-seat filled' + (same ? ' same' : '') + (withAnim ? ' flip' : '');
+  cell.innerHTML = name + (same ? '<span class="same-tag">同</span>' : '');
+}
+
+// 开始分配：解析名单 → 配对洗牌 → 翻牌动画
 function startAssign() {
   if (state.assigning) return;
   const names = parseNames();
   if (names.length === 0) {
-    alert('请先在「输入名单」中填写姓名（空格分隔）。');
+    alert('请先在「输入名单」中填写姓名（空格分隔，姓名后可加（男/女））。');
     dom.nameInput.focus();
     return;
   }
@@ -310,9 +394,11 @@ function startAssign() {
     return;
   }
   state.names = names;
-  state.assigned = assignSeats();
+  const { assigned, sameSexKeys } = assignSeats();
+  state.assigned = assigned;
+  state.sameSexKeys = sameSexKeys;
 
-  const animCells = prepareAnimCells(state.assigned);
+  const animCells = prepareAnimCells(state.assigned, state.sameSexKeys);
   if (animCells.length === 0) { finishAssign(); return; }
 
   state.assigning = true;
@@ -332,9 +418,8 @@ function startAssign() {
       finishAssign();
       return;
     }
-    const { cell, name } = state.animCells[state.animIndex++];
-    cell.className = 'seat-cell type-seat filled flip'; // 翻牌
-    cell.textContent = name;
+    const { cell, name, same } = state.animCells[state.animIndex++];
+    fillCell(cell, name, same, true); // 翻牌
   }, 260);
 }
 
@@ -342,9 +427,8 @@ function startAssign() {
 function skipAnim() {
   if (!state.assigning) return;
   clearInterval(state.animTimer);
-  for (const { cell, name } of state.animCells) {
-    cell.className = 'seat-cell type-seat filled';
-    cell.textContent = name;
+  for (const { cell, name, same } of state.animCells) {
+    fillCell(cell, name, same, false);
   }
   finishAssign();
 }
@@ -375,6 +459,7 @@ function clearAssignment(skipRender) {
   state.assigning = false;
   state.animCells = [];
   state.assigned = null;
+  state.sameSexKeys = null;
   state.filled = false;
   dom.startBtn.disabled = false;
   dom.startBtn.textContent = '🎲 开始分配';
@@ -389,14 +474,17 @@ function clearAssignment(skipRender) {
   }
 }
 
-// 网格上方状态行：座位 / 已分配 / 空座 / 名单
+// 网格上方状态行：座位 / 已分配 / 空座 / 名单 / 同性同桌
 function updateStatus() {
   const total = seatSlotCount();
   const filled = state.filled && state.assigned ? state.assigned.size : 0;
-  dom.seatStatus.innerHTML = '座位 <strong>' + total + '</strong>'
+  const sameGroups = state.sameSexKeys ? Math.round(state.sameSexKeys.size / 2) : 0;
+  let html = '座位 <strong>' + total + '</strong>'
     + ' · 已分配 <strong>' + filled + '</strong>'
     + ' · 空座 <strong>' + (total - filled) + '</strong>'
     + ' · 名单 <strong>' + state.names.length + '</strong> 人';
+  if (sameGroups > 0) html += ' · <span style="color:#B45309">同性同桌 ' + sameGroups + ' 组</span>';
+  dom.seatStatus.innerHTML = html;
 }
 
 /* ---------------- 导出 ---------------- */
@@ -406,7 +494,7 @@ function displayWidth(s) {
   return [...s].reduce((n, ch) => n + (/[^\x00-\xff]/.test(ch) ? 2 : 1), 0);
 }
 
-// 生成纯文本座位表（过道用空格，按显示宽度对齐）
+// 生成纯文本座位表（同性同桌名字后加 *，末尾附说明）
 function buildResultText() {
   const rows = [];
   for (let r = 0; r < state.rows; r++) {
@@ -415,13 +503,19 @@ function buildResultText() {
       const type = state.grid[r][c];
       const name = state.assigned ? (state.assigned.get(r + ',' + c) || '') : '';
       let text;
-      if (type === 'seat') text = name || '空';
-      else if (type === 'empty') text = '✕';
+      if (type === 'seat') {
+        text = name || '空';
+        if (name && state.sameSexKeys && state.sameSexKeys.has(r + ',' + c)) text += '*';
+      } else if (type === 'empty') text = '✕';
       else text = ' '; // gap 过道
       line.push(text);
     }
     const maxW = Math.max(...line.map(displayWidth));
     rows.push(line.map((t) => t + ' '.repeat(maxW - displayWidth(t))).join(' ').trimEnd());
+  }
+  if (state.sameSexKeys && state.sameSexKeys.size > 0) {
+    rows.push('');
+    rows.push('（* 标注 = 同性同桌）');
   }
   return rows.join('\n');
 }
@@ -431,7 +525,7 @@ function csvEscape(s) {
   return s;
 }
 
-// 生成 CSV 文件内容（逗号分隔 + BOM，供下载）
+// 生成 CSV 文件内容（逗号分隔 + BOM，供下载；不含标注保持干净）
 function buildCsvFile() {
   const rows = [];
   for (let r = 0; r < state.rows; r++) {
@@ -439,15 +533,14 @@ function buildCsvFile() {
     for (let c = 0; c < state.cols; c++) {
       const type = state.grid[r][c];
       if (type !== 'seat') { line.push(''); continue; }
-      const name = state.assigned ? (state.assigned.get(r + ',' + c) || '') : '';
-      line.push(csvEscape(name));
+      line.push(csvEscape(state.assigned ? (state.assigned.get(r + ',' + c) || '') : ''));
     }
     rows.push(line.join(','));
   }
   return '\uFEFF' + rows.join('\r\n');
 }
 
-// 生成制表符分隔表格（Excel 粘贴时自动分列）
+// 生成制表符分隔表格（Excel 粘贴自动分列；不含标注保持干净）
 function buildTsv() {
   const rows = [];
   for (let r = 0; r < state.rows; r++) {
