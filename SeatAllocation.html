@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>座位分配 - NightStriker</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ===== 座位分配页专用样式 ===== */
+    .seat-desc {
+      color: #64748B;
+      font-size: 0.95rem;
+      margin: -12px 0 28px;
+    }
+
+    .seat-card {
+      background: #FFFFFF;
+      border: 1px solid #E8DFD5;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 12px rgba(30, 41, 59, 0.05);
+    }
+
+    .seat-card h2 {
+      font-family: 'Noto Serif SC', Georgia, serif;
+      font-size: 1.25rem;
+      color: #1E293B;
+      margin-bottom: 16px;
+    }
+
+    .seat-card h2 .step-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #1E293B;
+      color: #FFFBF4;
+      font-size: 0.85rem;
+      font-family: 'Inter', sans-serif;
+      margin-right: 8px;
+      vertical-align: 2px;
+    }
+
+    /* ---- 行列配置 ---- */
+    .seat-config-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .seat-config-row label {
+      font-size: 0.9rem;
+      color: #475569;
+    }
+
+    .seat-config-row input[type="number"] {
+      width: 72px;
+      padding: 8px 10px;
+      border: 1px solid #D8CFC2;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      background: #FFFBF4;
+      color: #1E293B;
+    }
+
+    .btn-seat {
+      padding: 9px 18px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-seat-primary {
+      background: #1E293B;
+      color: #FFFBF4;
+    }
+    .btn-seat-primary:hover { background: #334155; }
+
+    .btn-seat-ghost {
+      background: #F1EBE3;
+      color: #475569;
+    }
+    .btn-seat-ghost:hover { background: #E8DFD5; }
+
+    .btn-seat-danger {
+      background: #FEE2E2;
+      color: #B91C1C;
+    }
+    .btn-seat-danger:hover { background: #FECACA; }
+
+    .btn-seat:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* ---- 画笔工具栏 ---- */
+    .paint-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding-bottom: 14px;
+      border-bottom: 1px dashed #E8DFD5;
+    }
+
+    .paint-toolbar .paint-hint {
+      font-size: 0.8rem;
+      color: #94A3B8;
+      margin-left: auto;
+    }
+
+    .paint-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border: 1.5px solid #D8CFC2;
+      border-radius: 999px;
+      background: #FFFFFF;
+      font-size: 0.85rem;
+      font-family: inherit;
+      font-weight: 500;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .paint-btn:hover { border-color: #1E293B; }
+    .paint-btn.active {
+      border-color: #1E293B;
+      background: #1E293B;
+      color: #FFFBF4;
+    }
+
+    .paint-swatch {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      border: 1px solid rgba(0, 0, 0, 0.15);
+    }
+
+    /* ---- 座位网格 ---- */
+    .seat-stage {
+      overflow-x: auto;
+      padding: 8px 0;
+    }
+
+    .seat-grid {
+      display: grid;
+      gap: 6px;
+      grid-template-columns: repeat(var(--cols, 7), minmax(44px, 62px));
+      justify-content: center;
+      margin: 0 auto;
+      width: max-content;
+      min-width: min-content;
+    }
+
+    .seat-cell {
+      height: 52px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.12s, box-shadow 0.12s;
+      overflow: hidden;
+      word-break: break-all;
+      line-height: 1.2;
+      padding: 2px 4px;
+    }
+
+    .seat-cell:hover { transform: scale(1.05); }
+
+    .seat-cell.type-seat {
+      background: #FFFBF4;
+      border: 1.5px dashed #C9BFAF;
+      color: #94A3B8;
+    }
+
+    .seat-cell.type-seat.filled {
+      background: #1E293B;
+      border: 1.5px solid #1E293B;
+      color: #FFFBF4;
+      cursor: default;
+    }
+
+    .seat-cell.type-seat.filled.anim-pop {
+      animation: seatPop 0.35s ease-out;
+    }
+
+    .seat-cell.type-empty {
+      background: #F5F1EA;
+      border: 1.5px dashed transparent;
+      color: #C9BFAF;
+      font-size: 0.8rem;
+    }
+
+    .seat-cell.type-aisle {
+      background: transparent;
+      border: none;
+      cursor: default;
+      color: #C9BFAF;
+      font-size: 0.6rem;
+      letter-spacing: 2px;
+    }
+    .seat-cell.type-aisle:hover { transform: none; }
+
+    .seat-cell.type-window {
+      background: linear-gradient(180deg, #E0F2FE, #BAE6FD);
+      border: 1.5px solid #7DD3FC;
+      color: #0369A1;
+      font-size: 0.7rem;
+    }
+
+    .seat-cell.type-podium {
+      background: linear-gradient(135deg, #FDE68A, #FCD34D);
+      border: 1.5px solid #F59E0B;
+      color: #92400E;
+      font-size: 0.75rem;
+      cursor: default;
+    }
+    .seat-cell.type-podium:hover { transform: none; }
+
+    @keyframes seatPop {
+      0%   { transform: scale(0.4); opacity: 0.2; }
+      60%  { transform: scale(1.12); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* ---- 图例 ---- */
+    .seat-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 12px;
+      font-size: 0.8rem;
+      color: #64748B;
+    }
+
+    .seat-legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ---- 名单输入 ---- */
+    #nameInput {
+      width: 100%;
+      min-height: 120px;
+      padding: 12px 14px;
+      border: 1px solid #D8CFC2;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      background: #FFFBF4;
+      color: #1E293B;
+      resize: vertical;
+      line-height: 1.7;
+    }
+
+    #nameInput:focus {
+      outline: none;
+      border-color: #1E293B;
+    }
+
+    .name-count {
+      margin-top: 8px;
+      font-size: 0.85rem;
+      color: #64748B;
+    }
+    .name-count.warn { color: #B91C1C; font-weight: 600; }
+
+    .name-format-hint {
+      font-size: 0.8rem;
+      color: #94A3B8;
+      margin-top: 6px;
+    }
+
+    /* ---- 操作按钮 ---- */
+    .seat-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .btn-seat-lg {
+      padding: 12px 26px;
+      font-size: 1rem;
+      border-radius: 10px;
+    }
+
+    .btn-seat-start {
+      background: linear-gradient(135deg, #1E293B, #334155);
+      color: #FFFBF4;
+      box-shadow: 0 4px 14px rgba(30, 41, 59, 0.25);
+    }
+    .btn-seat-start:hover { transform: translateY(-1px); }
+
+    .btn-seat-start.running { opacity: 0.6; pointer-events: none; }
+
+    /* ---- 结果 ---- */
+    .seat-result {
+      display: none;
+    }
+    .seat-result.visible {
+      display: block;
+      animation: resultIn 0.4s ease-out;
+    }
+
+    @keyframes resultIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .seat-result-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .seat-result-stats {
+      font-size: 0.9rem;
+      color: #475569;
+    }
+    .seat-result-stats strong { color: #1E293B; }
+
+    .result-grid {
+      display: grid;
+      gap: 6px;
+      grid-template-columns: repeat(var(--cols, 7), minmax(44px, 62px));
+      justify-content: center;
+      margin: 0 auto;
+      width: max-content;
+      min-width: min-content;
+    }
+
+    .result-cell {
+      height: 52px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-align: center;
+      padding: 2px 4px;
+      overflow: hidden;
+      word-break: break-all;
+      line-height: 1.2;
+    }
+
+    .result-cell.type-seat.filled {
+      background: #1E293B;
+      color: #FFFBF4;
+      border: 1.5px solid #1E293B;
+    }
+
+    .result-cell.type-empty { background: #F5F1EA; }
+    .result-cell.type-aisle { background: transparent; }
+    .result-cell.type-window {
+      background: linear-gradient(180deg, #E0F2FE, #BAE6FD);
+      border: 1.5px solid #7DD3FC;
+      color: #0369A1;
+      font-size: 0.7rem;
+    }
+    .result-cell.type-podium {
+      background: linear-gradient(135deg, #FDE68A, #FCD34D);
+      border: 1.5px solid #F59E0B;
+      color: #92400E;
+      font-size: 0.75rem;
+    }
+
+    .result-textarea {
+      width: 100%;
+      min-height: 160px;
+      margin-top: 16px;
+      padding: 12px 14px;
+      border: 1px solid #D8CFC2;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-family: 'Consolas', 'Courier New', monospace;
+      background: #FFFBF4;
+      color: #1E293B;
+      resize: vertical;
+      white-space: pre;
+      display: none;
+    }
+
+    .copy-tip {
+      font-size: 0.8rem;
+      color: #16A34A;
+      margin-left: 8px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .copy-tip.show { opacity: 1; }
+
+    /* ---- 响应式 ---- */
+    @media (max-width: 600px) {
+      .seat-card { padding: 16px; }
+      .paint-toolbar .paint-hint { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="container nav-container">
+      <a href="index.html" class="nav-logo">✦ NightStriker</a>
+      <div class="nav-links">
+        <a href="index.html#about">关于我</a>
+        <a href="index.html#messages">留言板</a>
+        <a href="blog.html">博客</a>
+        <a href="tools.html">工具箱</a>
+        <a href="games.html">游戏</a>
+        <a href="SeatAllocation.html" style="color:#1E293B;font-weight:700">座位分配</a>
+      </div>
+    </div>
+  </nav>
+
+  <section class="tools-section">
+    <div class="container">
+
+      <h1 class="tools-title">🪑 座位分配</h1>
+      <p class="seat-desc">自行绘制教室座位布局，输入名单，一键随机分配并演示。</p>
+
+      <!-- ① 绘制座位布局 -->
+      <div class="seat-card">
+        <h2><span class="step-num">1</span>绘制座位布局</h2>
+
+        <div class="seat-config-row">
+          <label>行数 <input type="number" id="rowInput" min="1" max="20" value="8"></label>
+          <label>列数 <input type="number" id="colInput" min="1" max="20" value="7"></label>
+          <button class="btn-seat btn-seat-primary" id="genGridBtn">生成网格</button>
+          <button class="btn-seat btn-seat-ghost" id="resetLayoutBtn">重置为默认</button>
+        </div>
+
+        <div class="paint-toolbar">
+          <button class="paint-btn active" data-paint="seat"><span class="paint-swatch" style="background:#FFFBF4"></span>座位</button>
+          <button class="paint-btn" data-paint="empty"><span class="paint-swatch" style="background:#F5F1EA"></span>空位</button>
+          <button class="paint-btn" data-paint="aisle"><span class="paint-swatch" style="background:transparent"></span>走廊</button>
+          <button class="paint-btn" data-paint="window"><span class="paint-swatch" style="background:#BAE6FD"></span>窗</button>
+          <button class="paint-btn" data-paint="podium"><span class="paint-swatch" style="background:#FCD34D"></span>讲台</button>
+          <span class="paint-hint">💡 点击或拖拽格子应用画笔；只有「座位」参与分配</span>
+        </div>
+
+        <div class="seat-stage">
+          <div class="seat-grid" id="seatGrid"></div>
+        </div>
+
+        <div class="seat-legend">
+          <span class="seat-legend-item"><span class="paint-swatch" style="background:#FFFBF4;border:1.5px dashed #C9BFAF"></span>座位</span>
+          <span class="seat-legend-item"><span class="paint-swatch" style="background:#F5F1EA"></span>空位</span>
+          <span class="seat-legend-item"><span class="paint-swatch" style="background:transparent"></span>走廊</span>
+          <span class="seat-legend-item"><span class="paint-swatch" style="background:#BAE6FD"></span>窗</span>
+          <span class="seat-legend-item"><span class="paint-swatch" style="background:#FCD34D"></span>讲台</span>
+        </div>
+      </div>
+
+      <!-- ② 输入名单 -->
+      <div class="seat-card">
+        <h2><span class="step-num">2</span>输入名单</h2>
+        <textarea id="nameInput" placeholder="张三 李四 王五&#10;赵六 钱七 孙八&#10;（姓名之间用空格、换行或逗号分隔均可）"></textarea>
+        <p class="name-count" id="nameCount">已识别 <strong>0</strong> 人</p>
+        <p class="name-format-hint">格式：姓名之间用空格分隔（如「张三 李四 王五」），换行/逗号也可。</p>
+      </div>
+
+      <!-- ③ 开始分配 -->
+      <div class="seat-actions">
+        <button class="btn-seat btn-seat-primary btn-seat-lg btn-seat-start" id="startBtn">🎲 开始分配</button>
+        <button class="btn-seat btn-seat-ghost btn-seat-lg" id="skipBtn" disabled>⏭ 跳过动画</button>
+        <button class="btn-seat btn-seat-ghost btn-seat-lg" id="againBtn" disabled>🔄 再抽一次</button>
+        <button class="btn-seat btn-seat-ghost btn-seat-lg" id="copyBtn" disabled>📋 复制结果</button>
+      </div>
+
+      <!-- 结果 -->
+      <div class="seat-result" id="seatResult">
+        <div class="seat-result-head">
+          <div class="seat-result-stats" id="resultStats"></div>
+          <span class="copy-tip" id="copyTip">✓ 已复制到剪贴板</span>
+        </div>
+        <div class="result-grid" id="resultGrid"></div>
+        <textarea class="result-textarea" id="resultText" readonly></textarea>
+      </div>
+
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; © 2026 NightStriker. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="seat-allocation.js"></script>
+</body>
+</html>
