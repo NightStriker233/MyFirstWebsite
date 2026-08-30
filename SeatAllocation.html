@@ -165,6 +165,7 @@
       user-select: none;
       cursor: pointer;
       transition: transform 0.1s;
+      position: relative;
     }
     .seat-cell:hover { transform: scale(1.04); }
 
@@ -197,16 +198,15 @@
     }
 
     .same-tag {
-      display: inline-block;
-      margin-left: 3px;
-      font-size: 0.55rem;
+      position: absolute;
+      top: 1px;
+      right: 1px;
+      font-size: 0.5rem;
       font-weight: 700;
+      line-height: 1.1;
       color: #B45309;
       background: #FDE68A;
-      border-radius: 2px;
-      padding: 0 3px;
-      line-height: 1.3;
-      vertical-align: 1px;
+      padding: 1px 2px;
     }
 
     .seat-cell.type-seat.filled.flip {

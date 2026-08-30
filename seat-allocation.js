@@ -289,7 +289,8 @@ function collectSeatGroups() {
   return groups;
 }
 
-// 按性别配对学生：男女同桌优先，剩余同类配对（标记同性），未知性别自由搭配
+// 按性别配对学生：最大化男女混合同桌。
+// 男女优先 → 剩余单性别先用未标注者搭配（避免同性）→ 实在无法避免才同性配对
 function buildStudentGroups() {
   const males = [], females = [], unknowns = [];
   for (const p of state.names) {
@@ -305,20 +306,23 @@ function buildStudentGroups() {
     groups.push({ seats: [males.pop(), females.pop()], sameSex: false });
   }
 
-  // 2. 剩余同类配对（男多或女多），标注同性
+  // 2. 剩余单性别者，先用未标注性别者搭配（避免同性同桌）
   const rest = males.length ? males : females;
+  while (rest.length && unknowns.length) {
+    groups.push({ seats: [rest.pop(), unknowns.pop()], sameSex: false });
+  }
+
+  // 3. 实在无法避免时，剩余同性别两两配对（标注同性）
   while (rest.length >= 2) {
     groups.push({ seats: [rest.pop(), rest.pop()], sameSex: true });
   }
 
-  // 3. 剩余单人先与未标注性别者搭配
+  // 4. 剩余单人先与未标注者搭配，未标注者两两搭配
   const leftover = [];
   if (rest.length) leftover.push(rest.pop());
   while (unknowns.length && leftover.length) {
     groups.push({ seats: [leftover.pop(), unknowns.pop()], sameSex: false });
   }
-
-  // 4. 未标注者两两搭配
   while (unknowns.length >= 2) {
     groups.push({ seats: [unknowns.pop(), unknowns.pop()], sameSex: false });
   }
