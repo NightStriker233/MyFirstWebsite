@@ -648,14 +648,29 @@ function onCellClick(r, c) {
 
 /* ---------------- 导入原来的位置 ---------------- */
 
-// 从文本导入座位表（每行一排，空格/竖线/制表符分隔，空位写「空」/「✕」）
+// 从文本导入座位表（每行一排，空格/竖线/制表符/逗号分隔，空位写「空」/「✕」）
+// 兼容：本工具「复制文本」输出（含说明行）、CSV 文件（含 BOM）
 function importSeatText(text) {
-  const lines = String(text || '').split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0);
-  if (lines.length === 0) throw new Error('内容为空');
-  const rows = lines.map((line) => line.split(/[\s|,，、\t]+/).filter((t) => t.length > 0));
+  let raw = String(text || '');
+  if (raw.charCodeAt(0) === 0xFEFF) raw = raw.slice(1); // 去掉 CSV 文件开头的 BOM
+
+  const lines = raw
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0)
+    .filter((l) => !(/^[（(]/.test(l) && l.includes('标注'))); // 忽略说明行，如「（* 标注 = 同性同桌）」
+
+  if (lines.length === 0) throw new Error('内容为空，请粘贴座位表或选择文件');
+
+  const rows = lines.map((line) => line.split(/[\s|｜,，、\t]+/).filter((t) => t.length > 0));
   const seatCols = rows[0].length;
-  if (!seatCols) throw new Error('无法识别座位列');
-  for (const r of rows) if (r.length !== seatCols) throw new Error('每行座位数不一致');
+  if (!seatCols) throw new Error('无法识别座位列，请用空格/竖线/逗号分隔名字');
+
+  for (let i = 0; i < rows.length; i++) {
+    if (rows[i].length !== seatCols) {
+      throw new Error('第 ' + (i + 1) + ' 行有 ' + rows[i].length + ' 个名字，与第一行（' + seatCols + ' 个）不一致；每排人数需相同，空位请写「空」');
+    }
+  }
 
   const layout = buildLayout(rows.length, seatCols);
   const grid = layout.grid.map((row) => row.slice());
@@ -975,7 +990,7 @@ function bindEvents() {
   dom.importBtn.addEventListener('click', () => {
     try {
       importSeatText(dom.importText.value);
-      alert('导入成功！');
+      alert('导入成功！' + state.rows + ' 行 × ' + state.seatCols + ' 座，共 ' + state.assigned.size + ' 人');
     } catch (err) {
       alert('导入失败：' + err.message);
     }
@@ -987,7 +1002,7 @@ function bindEvents() {
     reader.onload = () => {
       try {
         importSeatText(reader.result);
-        alert('导入成功！');
+        alert('导入成功！' + state.rows + ' 行 × ' + state.seatCols + ' 座，共 ' + state.assigned.size + ' 人');
       } catch (err) {
         alert('导入失败：' + err.message);
       }

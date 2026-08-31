@@ -49,6 +49,22 @@ test('导入文本：行列重建/空位/性别', () => {
   assert.strictEqual(state.genderMap['\u5F20\u4E09'], '\u7537');
 });
 
+test('导入兼容：BOM / 说明行 / 全角竖线 / CSV / 行不一致报错', () => {
+  // BOM + 说明行 + 全角竖线
+  els.importText.value = '\uFEFF' + ['甲 乙｜丙 丁', '戊 己 庚 辛', '（* 标注 = 同性同桌）'].join(NL);
+  importSeatText(els.importText.value);
+  assert.strictEqual(state.rows, 2);
+  assert.strictEqual(state.seatCols, 4);
+  assert.strictEqual(state.assigned.size, 8);
+  // CSV（逗号分隔，过道空，两行名字数一致）
+  els.importText.value = ['甲,乙,,丙,丁', '戊,己,,庚,辛'].join(NL);
+  importSeatText(els.importText.value);
+  assert.strictEqual(state.assigned.size, 8);
+  // 行不一致应报友好错误（含行号）
+  els.importText.value = ['甲 乙 丙', '丁 戊'].join(NL);
+  assert.throws(() => importSeatText(els.importText.value), /第 2 行/);
+});
+
 test('向左横移：小组循环左移', () => {
   const before = new Map(state.assigned);
   shiftGroupsLeft();
