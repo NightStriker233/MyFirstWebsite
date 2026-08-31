@@ -581,6 +581,7 @@ function shiftGroupsLeft() {
       });
     }
   }
+  state.sameSexKeys = recomputeSameSex(); // 轮换后重算同性同桌标注
   renderAssigned();
   updateStatus();
 }
@@ -610,6 +611,7 @@ function shiftGroupsRight() {
       });
     }
   }
+  state.sameSexKeys = recomputeSameSex(); // 轮换后重算同性同桌标注
   renderAssigned();
   updateStatus();
 }
@@ -634,6 +636,7 @@ function shiftRowsBack() {
       if (cell.name) state.assigned.set(key, cell.name); else state.assigned.delete(key);
     }
   }
+  state.sameSexKeys = recomputeSameSex(); // 轮换后重算同性同桌标注
   renderAssigned();
   updateStatus();
 }
@@ -658,6 +661,7 @@ function shiftRowsForward() {
       if (cell.name) state.assigned.set(key, cell.name); else state.assigned.delete(key);
     }
   }
+  state.sameSexKeys = recomputeSameSex(); // 轮换后重算同性同桌标注
   renderAssigned();
   updateStatus();
 }

@@ -109,6 +109,23 @@ test('向后移：整行循环后移', () => {
   assert.strictEqual(expectedRow0, actualRow0);
 });
 
+test('轮换后同性标注重算', () => {
+  els.nameInput.value = ['甲（男）','乙（男）','丙（女）','丁（女）','戊（男）','己（男）'].join(' ');
+  startAssign();
+  skipAnim();
+  // 4男2女 → 1 组男男（2 个 same 标记）
+  assert.strictEqual(state.sameSexKeys.size, 2);
+  const before = new Set(state.sameSexKeys);
+  shiftGroupsLeft();
+  // 轮换后标注应重算：与 recomputeSameSex 一致，且坐标已随组移动
+  const expected = recomputeSameSex();
+  assert.deepStrictEqual([...state.sameSexKeys].sort(), [...expected].sort());
+  assert.notDeepStrictEqual([...state.sameSexKeys].sort(), [...before].sort());
+  // 渲染格子有 same 标注
+  const sameCells = els.seatGrid.children.filter(c => c.className.indexOf('same') !== -1).length;
+  assert.strictEqual(sameCells, 2);
+});
+
 test('人调换：点选交换 + 同性重算', () => {
   els.nameInput.value = ['\u7532\uFF08\u7537\uFF09','\u4E59\uFF08\u7537\uFF09','\u4E19\uFF08\u5973\uFF09','\u4E01\uFF08\u5973\uFF09','\u620A\uFF08\u7537\uFF09','\u5DF1\uFF08\u5973\uFF09'].join(' ');
   startAssign();
