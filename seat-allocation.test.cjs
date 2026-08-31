@@ -12,7 +12,7 @@ function makeEl(tag) {
   return el;
 }
 const store = {}; const els = {}; const alerts = [];
-const ids = ['rowInput','colInput','genGridBtn','resetLayoutBtn','seatGrid','seatStatus','nameInput','nameCount','startBtn','skipBtn','clearBtn','copyTextBtn','copyExcelBtn','downloadCsvBtn','importText','importBtn','importFile','shiftLeftBtn','shiftBackBtn','saveKeyInput','saveBtn','copyLinkBtn','saveLink'];
+const ids = ['rowInput','colInput','genGridBtn','resetLayoutBtn','seatGrid','seatStatus','nameInput','nameCount','startBtn','skipBtn','clearBtn','copyTextBtn','copyExcelBtn','downloadCsvBtn','importText','importBtn','importFile','shiftLeftBtn','shiftRightBtn','shiftForwardBtn','shiftBackBtn'];
 ids.forEach(id => { els[id] = makeEl('div'); });
 els.seatGrid.style = { setProperty: () => {} };
 els.startBtn.textContent = 'S'; els.skipBtn.textContent = 'K'; els.clearBtn.textContent = 'C';
@@ -74,6 +74,31 @@ test('向左横移：小组循环左移', () => {
   const g1old = [before.get('0,0'), before.get('0,1')].sort().join('|');
   const g2new = [after.get('0,3'), after.get('0,4')].sort().join('|');
   assert.strictEqual(g1old, g2new);
+});
+
+test('向右横移：小组循环右移', () => {
+  els.importText.value = ['甲 乙｜丙 丁', '戊 己 庚 辛'].join(NL);
+  importSeatText(els.importText.value);
+  const before = new Map(state.assigned);
+  shiftGroupsRight();
+  const after = new Map(state.assigned);
+  assert.strictEqual(after.size, before.size);
+  assert.deepStrictEqual([...before.values()].sort(), [...after.values()].sort());
+  // 右移：原组1(c0,c1) 内容应移到组2(c3,c4)
+  const g1old = [before.get('0,0'), before.get('0,1')].sort().join('|');
+  const g2new = [after.get('0,3'), after.get('0,4')].sort().join('|');
+  assert.strictEqual(g1old, g2new);
+});
+
+test('向前移：整行循环前移', () => {
+  els.importText.value = ['甲 乙｜丙 丁', '戊 己 庚 辛'].join(NL);
+  importSeatText(els.importText.value);
+  const before = new Map(state.assigned);
+  shiftRowsForward();
+  // 新行0 = 原行1
+  const row1old = [...before.entries()].filter(([k]) => k.startsWith('1,')).map(([k, v]) => v).sort().join('|');
+  const row0new = [...state.assigned.entries()].filter(([k]) => k.startsWith('0,')).map(([k, v]) => v).sort().join('|');
+  assert.strictEqual(row1old, row0new);
 });
 
 test('向后移：整行循环后移', () => {

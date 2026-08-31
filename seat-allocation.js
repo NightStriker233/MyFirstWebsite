@@ -85,6 +85,8 @@ function cacheDom() {
   dom.importBtn = document.getElementById('importBtn');
   dom.importFile = document.getElementById('importFile');
   dom.shiftLeftBtn = document.getElementById('shiftLeftBtn');
+  dom.shiftRightBtn = document.getElementById('shiftRightBtn');
+  dom.shiftForwardBtn = document.getElementById('shiftForwardBtn');
   dom.shiftBackBtn = document.getElementById('shiftBackBtn');
 }
 
@@ -384,6 +386,8 @@ function updateEditLock() {
   document.querySelectorAll('.paint-btn').forEach((b) => { b.disabled = locked; });
   dom.clearBtn.disabled = !state.filled;
   dom.shiftLeftBtn.disabled = !state.filled;
+  dom.shiftRightBtn.disabled = !state.filled;
+  dom.shiftForwardBtn.disabled = !state.filled;
   dom.shiftBackBtn.disabled = !state.filled;
 }
 
@@ -581,6 +585,35 @@ function shiftGroupsLeft() {
   updateStatus();
 }
 
+// 向右横移：小组（同桌）整体循环右移一组，最右组回到最左
+function shiftGroupsRight() {
+  if (!state.filled || !state.assigned) return;
+  for (let r = 0; r < state.rows; r++) {
+    const groups = [];
+    let pair = [];
+    for (let c = 0; c < state.cols; c++) {
+      if (state.grid[r][c] === 'seat') {
+        pair.push(c);
+        if (pair.length === 2) { groups.push(pair); pair = []; }
+      }
+    }
+    if (pair.length) groups.push(pair);
+    if (groups.length <= 1) continue;
+
+    const names = groups.map((cols) => cols.map((c) => state.assigned.get(r + ',' + c) || null));
+    const shifted = names.map((_, i) => names[(i - 1 + names.length) % names.length]);
+    for (let i = 0; i < groups.length; i++) {
+      groups[i].forEach((c, j) => {
+        const key = r + ',' + c;
+        const nm = shifted[i][j];
+        if (nm) state.assigned.set(key, nm); else state.assigned.delete(key);
+      });
+    }
+  }
+  renderAssigned();
+  updateStatus();
+}
+
 // 向后移：整行循环后移一行，最后一行回到第一行
 function shiftRowsBack() {
   if (!state.filled || !state.assigned) return;
@@ -596,6 +629,30 @@ function shiftRowsBack() {
   }
   for (let r = 0; r < state.rows; r++) {
     const src = rowData[(r - 1 + state.rows) % state.rows];
+    for (const cell of src) {
+      const key = r + ',' + cell.c;
+      if (cell.name) state.assigned.set(key, cell.name); else state.assigned.delete(key);
+    }
+  }
+  renderAssigned();
+  updateStatus();
+}
+
+// 向前移：整行循环前移一行，第一行回到最后一行
+function shiftRowsForward() {
+  if (!state.filled || !state.assigned) return;
+  const rowData = [];
+  for (let r = 0; r < state.rows; r++) {
+    const cells = [];
+    for (let c = 0; c < state.cols; c++) {
+      if (state.grid[r][c] === 'seat') {
+        cells.push({ c, name: state.assigned.get(r + ',' + c) || null });
+      }
+    }
+    rowData.push(cells);
+  }
+  for (let r = 0; r < state.rows; r++) {
+    const src = rowData[(r + 1) % state.rows];
     for (const cell of src) {
       const key = r + ',' + cell.c;
       if (cell.name) state.assigned.set(key, cell.name); else state.assigned.delete(key);
@@ -892,6 +949,8 @@ function bindEvents() {
 
   // 换座（轮换）
   dom.shiftLeftBtn.addEventListener('click', shiftGroupsLeft);
+  dom.shiftRightBtn.addEventListener('click', shiftGroupsRight);
+  dom.shiftForwardBtn.addEventListener('click', shiftRowsForward);
   dom.shiftBackBtn.addEventListener('click', shiftRowsBack);
 
   // 导入
