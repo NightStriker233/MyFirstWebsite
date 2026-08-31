@@ -4,15 +4,17 @@
  * - 姓名支持「张三（男）」性别标注，男女同桌优先，
  *   无法避免时同性同桌并以橙色标注
  * - 翻牌动画逐个揭晓（可跳过），结果直接显示在网格上
- * - 结果出来后锁定布局编辑，可清空结果重新编辑
- * - 导出：纯文本（含同性标注）/ 制表符表格 / 下载 CSV 文件
- * 布局持久化于 localStorage；名单每次输入，不持久化。
+ * - 日常换座：小组向左横移 / 整行向后移（循环）
+ * - 人调换：分配后点选两个座位交换，自动重算同性标记
+ * - 导入原来的位置（粘贴文本 / 上传文件 / 保存链接恢复）
+ * - 保存座位表到服务器，关键词 URL 恢复
  * ============================================================ */
 'use strict';
 
 /* ---------------- 常量 ---------------- */
 
 const STORAGE_KEY = 'seatAllocationLayout_v3';
+const SAVE_API = '/api/seat-save';
 
 // 画笔类型：只有 seat 参与分配；gap 为固定过道列，不可绘制
 const PAINT_TYPES = ['seat', 'empty'];
@@ -55,9 +57,11 @@ const state = {
   animIndex: 0,        // 动画当前进度
   animCells: [],       // 待翻牌的格子列表
   names: [],           // 本次解析出的名单 [{name, gender}]
+  genderMap: {},       // name → gender（用于调换后重算同性）
   assigned: null,      // 分配结果 Map<"r,c", name>；null = 未分配
   sameSexKeys: null,   // 同性同桌的格子 key 集合
   filled: false,       // 是否已完成一次分配（网格显示名字，布局锁定）
+  selectedCell: null,  // 调换模式下选中的格子 {r, c}
 };
 
 /* ---------------- DOM 缓存 ---------------- */
@@ -79,6 +83,15 @@ function cacheDom() {
   dom.copyTextBtn = document.getElementById('copyTextBtn');
   dom.copyExcelBtn = document.getElementById('copyExcelBtn');
   dom.downloadCsvBtn = document.getElementById('downloadCsvBtn');
+  dom.importText = document.getElementById('importText');
+  dom.importBtn = document.getElementById('importBtn');
+  dom.importFile = document.getElementById('importFile');
+  dom.shiftLeftBtn = document.getElementById('shiftLeftBtn');
+  dom.shiftBackBtn = document.getElementById('shiftBackBtn');
+  dom.saveKeyInput = document.getElementById('saveKeyInput');
+  dom.saveBtn = document.getElementById('saveBtn');
+  dom.copyLinkBtn = document.getElementById('copyLinkBtn');
+  dom.saveLink = document.getElementById('saveLink');
 }
 
 /* ---------------- localStorage ---------------- */
@@ -193,27 +206,9 @@ function applyPaint(r, c) {
   saveLayout();
 }
 
-function onGridMouseDown(e) {
-  if (state.assigning || state.filled) return; // 动画中/结果出来后不可编辑
-  const cell = e.target.closest('.seat-cell');
-  if (!cell) return;
-  e.preventDefault();
-  state.painting = true;
-  applyPaint(parseInt(cell.dataset.row, 10), parseInt(cell.dataset.col, 10));
-}
-
-function onGridMouseOver(e) {
-  if (!state.painting || state.assigning || state.filled) return;
-  const cell = e.target.closest('.seat-cell');
-  if (!cell) return;
-  applyPaint(parseInt(cell.dataset.row, 10), parseInt(cell.dataset.col, 10));
-}
-
 /* ---------------- 名单解析与随机分配 ---------------- */
 
 // 解析名单：空格/换行/逗号/顿号/分号分隔；兼容多种性别标注写法
-// 支持：张三（男）/张三(男)（括号）、张三男（尾字）、张三 男（空格分隔）
-// 解析后名字一律不含「男」「女」字样，性别仅用于配对
 function parseNames() {
   const tokens = dom.nameInput.value
     .split(/[\s,，、;；]+/)
@@ -222,23 +217,20 @@ function parseNames() {
 
   const names = [];
   for (const t of tokens) {
-    // 1. 括号格式：张三（男）/张三(男)
-    const m = t.match(/^(.+?)[（(]\s*(男|女)\s*[）)]$/);
-    if (m) { names.push({ name: m[1].trim(), gender: m[2] }); continue; }
-
-    // 2. 独立的性别 token：张三 男 李四 女 → 绑定给前一个名字
-    if ((t === '男' || t === '女') && names.length > 0 && !names[names.length - 1].gender) {
-      names[names.length - 1].gender = t;
-      continue;
-    }
-
-    // 3. 名字尾字性别：张三男 / 李四女（两字以上才剥离，避免误伤单字名）
-    const tm = t.match(/^(.{2,})(男|女)$/);
-    if (tm) { names.push({ name: tm[1], gender: tm[2] }); continue; }
-
-    names.push({ name: t, gender: '' });
+    const p = parseNameToken(t);
+    names.push(p);
   }
   return names;
+}
+
+// 解析单个姓名 token（括号/尾字性别、同性标记 *）
+function parseNameToken(t) {
+  const clean = t.replace(/\*+$/, '').trim();
+  const m = clean.match(/^(.+?)[（(]\s*(男|女)\s*[）)]$/);
+  if (m) return { name: m[1].trim(), gender: m[2] };
+  const tm = clean.match(/^(.{2,})(男|女)$/);
+  if (tm) return { name: tm[1], gender: tm[2] };
+  return { name: clean, gender: '' };
 }
 
 // 可用座位数（只有 seat 类型参与分配）
@@ -363,6 +355,31 @@ function assignSeats() {
   return { assigned, sameSexKeys };
 }
 
+// 按当前同桌关系重算同性标记（调换后使用）
+function recomputeSameSex() {
+  const set = new Set();
+  for (let r = 0; r < state.rows; r++) {
+    let pair = [];
+    for (let c = 0; c < state.cols; c++) {
+      if (state.grid[r][c] === 'seat') {
+        pair.push([r, c]);
+        if (pair.length === 2) {
+          const n1 = state.assigned.get(pair[0][0] + ',' + pair[0][1]);
+          const n2 = state.assigned.get(pair[1][0] + ',' + pair[1][1]);
+          const g1 = n1 ? state.genderMap[n1] : null;
+          const g2 = n2 ? state.genderMap[n2] : null;
+          if (g1 && g2 && g1 === g2) {
+            set.add(pair[0][0] + ',' + pair[0][1]);
+            set.add(pair[1][0] + ',' + pair[1][1]);
+          }
+          pair = [];
+        }
+      }
+    }
+  }
+  return set;
+}
+
 /* ---------------- 编辑锁定 ---------------- */
 
 // 结果出来后 / 动画中锁定布局编辑；「清空结果」可解锁
@@ -372,6 +389,9 @@ function updateEditLock() {
   dom.resetLayoutBtn.disabled = locked;
   document.querySelectorAll('.paint-btn').forEach((b) => { b.disabled = locked; });
   dom.clearBtn.disabled = !state.filled;
+  dom.shiftLeftBtn.disabled = !state.filled;
+  dom.shiftBackBtn.disabled = !state.filled;
+  dom.saveBtn.disabled = !state.filled;
 }
 
 /* ---------------- 演示动画（翻牌揭晓） ---------------- */
@@ -406,6 +426,25 @@ function fillCell(cell, name, same, withAnim) {
   cell.innerHTML = name + (same ? '<span class="same-tag">同</span>' : '');
 }
 
+// 无动画渲染当前分配结果（轮换/调换/导入/恢复后使用）
+function renderAssigned() {
+  for (let r = 0; r < state.rows; r++) {
+    for (let c = 0; c < state.cols; c++) {
+      const cell = dom.seatGrid.children[r * state.cols + c];
+      if (!cell) continue;
+      if (state.grid[r][c] === 'seat') {
+        const name = state.assigned.get(r + ',' + c) || '';
+        const same = state.sameSexKeys && state.sameSexKeys.has(r + ',' + c);
+        if (name) fillCell(cell, name, same, false);
+        else { cell.className = 'seat-cell type-seat'; cell.textContent = ''; }
+      } else {
+        cell.className = 'seat-cell type-' + state.grid[r][c];
+        cell.textContent = cellLabel(state.grid[r][c]);
+      }
+    }
+  }
+}
+
 // 开始分配：解析名单 → 配对洗牌 → 翻牌动画
 function startAssign() {
   if (state.assigning) return;
@@ -420,6 +459,9 @@ function startAssign() {
     return;
   }
   state.names = names;
+  state.genderMap = {};
+  for (const p of names) state.genderMap[p.name] = p.gender;
+
   const { assigned, sameSexKeys } = assignSeats();
   state.assigned = assigned;
   state.sameSexKeys = sameSexKeys;
@@ -476,6 +518,7 @@ function finishAssign() {
 
 // 清空分配结果，恢复编辑模式
 function clearAssignment(skipRender) {
+  state.selectedCell = null;
   if (!state.filled && !state.assigned && !state.assigning) {
     updateEditLock();
     if (!skipRender) renderSeatGrid();
@@ -486,6 +529,7 @@ function clearAssignment(skipRender) {
   state.animCells = [];
   state.assigned = null;
   state.sameSexKeys = null;
+  state.genderMap = {};
   state.filled = false;
   dom.startBtn.disabled = false;
   dom.startBtn.textContent = '🎲 开始分配';
@@ -511,6 +555,241 @@ function updateStatus() {
     + ' · 名单 <strong>' + state.names.length + '</strong> 人';
   if (sameGroups > 0) html += ' · <span style="color:#B45309">同性同桌 ' + sameGroups + ' 组</span>';
   dom.seatStatus.innerHTML = html;
+}
+
+/* ---------------- 日常换座（轮换） ---------------- */
+
+// 向左横移：小组（同桌）整体循环左移一组，最左组回到最右
+function shiftGroupsLeft() {
+  if (!state.filled || !state.assigned) return;
+  for (let r = 0; r < state.rows; r++) {
+    const groups = [];
+    let pair = [];
+    for (let c = 0; c < state.cols; c++) {
+      if (state.grid[r][c] === 'seat') {
+        pair.push(c);
+        if (pair.length === 2) { groups.push(pair); pair = []; }
+      }
+    }
+    if (pair.length) groups.push(pair);
+    if (groups.length <= 1) continue;
+
+    const names = groups.map((cols) => cols.map((c) => state.assigned.get(r + ',' + c) || null));
+    const shifted = names.map((_, i) => names[(i + 1) % names.length]);
+    for (let i = 0; i < groups.length; i++) {
+      groups[i].forEach((c, j) => {
+        const key = r + ',' + c;
+        const nm = shifted[i][j];
+        if (nm) state.assigned.set(key, nm); else state.assigned.delete(key);
+      });
+    }
+  }
+  renderAssigned();
+  updateStatus();
+}
+
+// 向后移：整行循环后移一行，最后一行回到第一行
+function shiftRowsBack() {
+  if (!state.filled || !state.assigned) return;
+  const rowData = [];
+  for (let r = 0; r < state.rows; r++) {
+    const cells = [];
+    for (let c = 0; c < state.cols; c++) {
+      if (state.grid[r][c] === 'seat') {
+        cells.push({ c, name: state.assigned.get(r + ',' + c) || null });
+      }
+    }
+    rowData.push(cells);
+  }
+  for (let r = 0; r < state.rows; r++) {
+    const src = rowData[(r - 1 + state.rows) % state.rows];
+    for (const cell of src) {
+      const key = r + ',' + cell.c;
+      if (cell.name) state.assigned.set(key, cell.name); else state.assigned.delete(key);
+    }
+  }
+  renderAssigned();
+  updateStatus();
+}
+
+/* ---------------- 人调换 ---------------- */
+
+function clearHighlight() {
+  document.querySelectorAll('.seat-cell.selected').forEach((c) => c.classList.remove('selected'));
+}
+
+// 点击格子：选中 / 交换
+function onCellClick(r, c) {
+  if (!state.filled || !state.assigned) return;
+  if (state.grid[r][c] !== 'seat') return;
+  const key = r + ',' + c;
+
+  if (!state.selectedCell) {
+    state.selectedCell = { r, c };
+    const cell = dom.seatGrid.children[r * state.cols + c];
+    if (cell) cell.classList.add('selected');
+    return;
+  }
+
+  const sel = state.selectedCell;
+  state.selectedCell = null;
+  clearHighlight();
+  if (sel.r === r && sel.c === c) return; // 再点同一个 = 取消
+
+  const n1 = state.assigned.get(sel.r + ',' + sel.c);
+  const n2 = state.assigned.get(key);
+  if (n1) state.assigned.set(key, n1); else state.assigned.delete(key);
+  if (n2) state.assigned.set(sel.r + ',' + sel.c, n2); else state.assigned.delete(sel.r + ',' + sel.c);
+
+  state.sameSexKeys = recomputeSameSex();
+  renderAssigned();
+  updateStatus();
+}
+
+/* ---------------- 导入原来的位置 ---------------- */
+
+// 从文本导入座位表（每行一排，空格/竖线/制表符分隔，空位写「空」/「✕」）
+function importSeatText(text) {
+  const lines = String(text || '').split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0);
+  if (lines.length === 0) throw new Error('内容为空');
+  const rows = lines.map((line) => line.split(/[\s|,，、\t]+/).filter((t) => t.length > 0));
+  const seatCols = rows[0].length;
+  if (!seatCols) throw new Error('无法识别座位列');
+  for (const r of rows) if (r.length !== seatCols) throw new Error('每行座位数不一致');
+
+  const layout = buildLayout(rows.length, seatCols);
+  const grid = layout.grid.map((row) => row.slice());
+  const seatPositions = [];
+  for (let r = 0; r < grid.length; r++) {
+    for (let c = 0; c < grid[r].length; c++) {
+      if (grid[r][c] === 'seat') seatPositions.push([r, c]);
+    }
+  }
+
+  const assigned = new Map();
+  const names = [];
+  const genderMap = {};
+  for (let i = 0; i < rows.length; i++) {
+    for (let j = 0; j < rows[i].length; j++) {
+      const [r, c] = seatPositions[i * seatCols + j];
+      const tok = rows[i][j];
+      if (tok === '空' || tok === '✕') continue; // 空位：保留座位类型，不填名字
+      const p = parseNameToken(tok);
+      assigned.set(r + ',' + c, p.name);
+      names.push(p);
+      genderMap[p.name] = p.gender;
+    }
+  }
+
+  state.rows = grid.length;
+  state.seatCols = seatCols;
+  state.cols = grid[0].length;
+  state.grid = grid;
+  state.names = names;
+  state.genderMap = genderMap;
+  state.assigned = assigned;
+  state.filled = true;
+  state.selectedCell = null;
+  state.sameSexKeys = recomputeSameSex();
+
+  dom.rowInput.value = state.rows;
+  dom.colInput.value = state.seatCols;
+  saveLayout();
+  setGridColumns();
+  renderSeatGrid();
+  renderAssigned();
+  dom.startBtn.textContent = '🔄 再抽一次';
+  dom.skipBtn.disabled = true;
+  dom.copyTextBtn.disabled = false;
+  dom.copyExcelBtn.disabled = false;
+  dom.downloadCsvBtn.disabled = false;
+  updateEditLock();
+  updateStatus();
+}
+
+/* ---------------- 保存与恢复 ---------------- */
+
+function buildSaveData() {
+  return {
+    v: 1,
+    rows: state.rows,
+    seatCols: state.seatCols,
+    grid: state.grid,
+    names: state.names,
+    assigned: [...state.assigned.entries()],
+    sameSex: [...state.sameSexKeys],
+  };
+}
+
+// 应用保存的数据（恢复）
+function applySaveData(data) {
+  if (!data || !data.grid) throw new Error('数据无效');
+  state.rows = data.rows;
+  state.seatCols = data.seatCols;
+  state.cols = data.grid[0].length;
+  state.grid = data.grid;
+  state.names = data.names || [];
+  state.assigned = new Map(data.assigned || []);
+  state.sameSexKeys = new Set(data.sameSex || []);
+  state.genderMap = {};
+  for (const p of state.names) state.genderMap[p.name] = p.gender;
+  state.filled = true;
+  state.selectedCell = null;
+
+  dom.rowInput.value = state.rows;
+  dom.colInput.value = state.seatCols;
+  saveLayout();
+  setGridColumns();
+  renderSeatGrid();
+  renderAssigned();
+  dom.startBtn.textContent = '🔄 再抽一次';
+  dom.skipBtn.disabled = true;
+  dom.copyTextBtn.disabled = false;
+  dom.copyExcelBtn.disabled = false;
+  dom.downloadCsvBtn.disabled = false;
+  updateEditLock();
+  updateStatus();
+}
+
+async function saveSeat(key) {
+  const res = await fetch(SAVE_API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ key, data: buildSaveData() }),
+  });
+  const d = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(d.error || '保存失败');
+  return d;
+}
+
+// 从 URL 提取关键词（支持 ?key= 与 /SeatAllocation.html/:key 两种）
+function getUrlKey() {
+  const q = new URLSearchParams(window.location.search).get('key');
+  if (q) return q;
+  const m = window.location.pathname.match(/\/SeatAllocation\.html\/([^/]+)$/);
+  return m ? decodeURIComponent(m[1]) : null;
+}
+
+async function tryRestoreFromUrl() {
+  const key = getUrlKey();
+  if (!key) return;
+  try {
+    const res = await fetch(SAVE_API + '?key=' + encodeURIComponent(key));
+    if (!res.ok) throw new Error('未找到该关键词的座位表');
+    const d = await res.json();
+    applySaveData(d.data);
+    dom.saveKeyInput.value = key;
+    dom.saveLink.textContent = buildShareUrl(key);
+    dom.saveLink.style.display = 'block';
+    dom.copyLinkBtn.style.display = 'inline-block';
+    dom.seatStatus.innerHTML += ' <span style="color:#16A34A">✓ 已从链接恢复</span>';
+  } catch (err) {
+    dom.seatStatus.innerHTML = '⚠️ 无法从链接恢复座位表：' + err.message;
+  }
+}
+
+function buildShareUrl(key) {
+  return window.location.origin + '/SeatAllocation.html/' + encodeURIComponent(key);
 }
 
 /* ---------------- 导出 ---------------- */
@@ -633,6 +912,30 @@ function downloadCsv() {
   URL.revokeObjectURL(url);
 }
 
+/* ---------------- 网格点击 ---------------- */
+
+function onGridMouseDown(e) {
+  const cell = e.target.closest('.seat-cell');
+  if (!cell) return;
+  if (state.assigning) return;
+  const r = parseInt(cell.dataset.row, 10);
+  const c = parseInt(cell.dataset.col, 10);
+  e.preventDefault();
+  if (state.filled) {
+    onCellClick(r, c); // 调换
+    return;
+  }
+  state.painting = true;
+  applyPaint(r, c);
+}
+
+function onGridMouseOver(e) {
+  if (!state.painting || state.assigning || state.filled) return;
+  const cell = e.target.closest('.seat-cell');
+  if (!cell) return;
+  applyPaint(parseInt(cell.dataset.row, 10), parseInt(cell.dataset.col, 10));
+}
+
 /* ---------------- 事件绑定 ---------------- */
 
 function bindEvents() {
@@ -663,6 +966,58 @@ function bindEvents() {
   dom.copyTextBtn.addEventListener('click', copyResultText);
   dom.copyExcelBtn.addEventListener('click', copyResultExcel);
   dom.downloadCsvBtn.addEventListener('click', downloadCsv);
+
+  // 换座（轮换）
+  dom.shiftLeftBtn.addEventListener('click', shiftGroupsLeft);
+  dom.shiftBackBtn.addEventListener('click', shiftRowsBack);
+
+  // 导入
+  dom.importBtn.addEventListener('click', () => {
+    try {
+      importSeatText(dom.importText.value);
+      alert('导入成功！');
+    } catch (err) {
+      alert('导入失败：' + err.message);
+    }
+  });
+  dom.importFile.addEventListener('change', () => {
+    const f = dom.importFile.files && dom.importFile.files[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        importSeatText(reader.result);
+        alert('导入成功！');
+      } catch (err) {
+        alert('导入失败：' + err.message);
+      }
+      dom.importFile.value = '';
+    };
+    reader.readAsText(f);
+  });
+
+  // 保存
+  dom.saveBtn.addEventListener('click', async () => {
+    const key = dom.saveKeyInput.value.trim();
+    if (!key) { alert('请先输入关键词'); return; }
+    dom.saveBtn.disabled = true;
+    dom.saveBtn.textContent = '保存中…';
+    try {
+      await saveSeat(key);
+      const url = buildShareUrl(key);
+      dom.saveLink.textContent = url;
+      dom.saveLink.style.display = 'block';
+      dom.copyLinkBtn.style.display = 'inline-block';
+    } catch (err) {
+      alert('保存失败：' + err.message);
+    } finally {
+      dom.saveBtn.disabled = !state.filled;
+      dom.saveBtn.textContent = '💾 保存';
+    }
+  });
+  dom.copyLinkBtn.addEventListener('click', () => {
+    if (dom.saveLink.textContent) copyText(dom.saveLink.textContent, dom.copyLinkBtn);
+  });
 }
 
 /* ---------------- 启动 ---------------- */
@@ -688,6 +1043,7 @@ function init() {
   renderSeatGrid();
   updateEditLock();
   updateStatus();
+  tryRestoreFromUrl();
 }
 
 document.addEventListener('DOMContentLoaded', init);

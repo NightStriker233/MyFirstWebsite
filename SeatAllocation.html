@@ -44,7 +44,8 @@
       color: #475569;
     }
 
-    .seat-config-row input[type="number"] {
+    .seat-config-row input[type="number"],
+    .seat-config-row input[type="text"] {
       width: 64px;
       padding: 6px 8px;
       border: 1px solid #CBD5E1;
@@ -54,7 +55,8 @@
       color: #1E293B;
     }
 
-    .seat-config-row input[type="number"]:focus {
+    .seat-config-row input[type="number"]:focus,
+    .seat-config-row input[type="text"]:focus {
       outline: none;
       border-color: #1E293B;
     }
@@ -120,6 +122,10 @@
       border-color: #1E293B;
       background: #1E293B;
       color: #FFFFFF;
+    }
+    .paint-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
     }
 
     .paint-swatch {
@@ -191,6 +197,13 @@
     }
     .seat-cell.type-seat.filled:hover { transform: none; }
 
+    .seat-cell.selected {
+      outline: 2px solid #2563EB;
+      outline-offset: -2px;
+      z-index: 1;
+    }
+    .seat-cell.selected:hover { transform: none; }
+
     .seat-cell.type-seat.filled.same {
       background: #FEF3C7;
       border: 1px solid #F59E0B;
@@ -248,14 +261,14 @@
       gap: 6px;
     }
 
-    /* ---- 名单输入 ---- */
+    /* ---- 名单 / 导入输入 ---- */
     .name-input-wrap {
       display: flex;
       align-items: flex-start;
       gap: 16px;
     }
 
-    #nameInput {
+    #nameInput, #importText {
       flex: 1;
       width: 100%;
       min-height: 96px;
@@ -269,7 +282,7 @@
       line-height: 1.7;
     }
 
-    #nameInput:focus {
+    #nameInput:focus, #importText:focus {
       outline: none;
       border-color: #1E293B;
     }
@@ -285,6 +298,14 @@
       font-size: 0.78rem;
       color: #94A3B8;
       margin-top: 6px;
+    }
+
+    .save-link {
+      margin-top: 8px;
+      font-size: 0.85rem;
+      color: #1D4ED8;
+      word-break: break-all;
+      font-family: 'Consolas', 'Courier New', monospace;
     }
 
     /* ---- 操作按钮 ---- */
@@ -304,7 +325,7 @@
     @media print {
       .navbar, .seat-config-row, .paint-toolbar, .seat-legend,
       .seat-actions, .name-input-wrap, .name-count, .name-format-hint,
-      .footer, .seat-desc { display: none !important; }
+      .footer, .seat-desc, .save-link { display: none !important; }
 
       body { background: #FFFFFF; }
       .tools-section { padding: 0; }
@@ -386,14 +407,42 @@
         <p class="name-format-hint">格式：姓名之间用空格分隔，性别用括号标注（如「张三（男） 李四（女）」），全角（）半角()均可，不标也行。男女同桌优先，多出的人同性同桌会以橙色标注。</p>
       </div>
 
+      <!-- 导入原来的位置 -->
+      <div class="seat-card">
+        <h2>导入原来的位置</h2>
+        <p class="name-format-hint">粘贴座位表（每行一排，名字用空格/竖线/制表符分隔，空位写「空」），或上传 .csv / .txt 文件。</p>
+        <div class="name-input-wrap">
+          <textarea id="importText" placeholder="张三 李四 | 王五 赵六&#10;孙七 周八 | 吴九 郑十&#10;（支持性别标注与同性标记 *，空位写「空」）"></textarea>
+        </div>
+        <div class="seat-config-row" style="margin-top:10px">
+          <button class="btn-seat btn-seat-primary" id="importBtn">📥 导入</button>
+          <label class="btn-seat" style="cursor:pointer">📁 上传文件<input type="file" id="importFile" accept=".csv,.txt" style="display:none"></label>
+        </div>
+      </div>
+
       <!-- 操作 -->
       <div class="seat-actions">
         <button class="btn-seat btn-seat-primary btn-seat-lg" id="startBtn">🎲 开始分配</button>
         <button class="btn-seat btn-seat-lg" id="skipBtn" disabled>⏭ 跳过动画</button>
         <button class="btn-seat btn-seat-lg" id="clearBtn" disabled>🧹 清空结果</button>
+        <button class="btn-seat btn-seat-lg" id="shiftLeftBtn" disabled>⬅ 向左横移</button>
+        <button class="btn-seat btn-seat-lg" id="shiftBackBtn" disabled>⬇ 向后移</button>
         <button class="btn-seat btn-seat-lg" id="copyTextBtn" disabled>📋 复制文本</button>
         <button class="btn-seat btn-seat-lg" id="copyExcelBtn" disabled>📋 复制表格</button>
         <button class="btn-seat btn-seat-lg" id="downloadCsvBtn" disabled>⬇️ 下载表格</button>
+      </div>
+      <p class="name-format-hint" style="margin:-10px 0 20px">💡 分配后点击两个座位可交换（人调换）；「向左横移」小组循环左移，「向后移」整行循环后移。</p>
+
+      <!-- 保存座位表 -->
+      <div class="seat-card">
+        <h2>保存座位表</h2>
+        <div class="seat-config-row">
+          <label>关键词 <input type="text" id="saveKeyInput" placeholder="如 class10grade1" maxlength="100" style="width:160px"></label>
+          <button class="btn-seat btn-seat-primary" id="saveBtn" disabled>💾 保存</button>
+          <button class="btn-seat" id="copyLinkBtn" style="display:none">📋 复制链接</button>
+        </div>
+        <p class="name-format-hint">保存后可通过链接随时恢复，如 nightstriker.top/SeatAllocation.html/class10grade1</p>
+        <p class="save-link" id="saveLink" style="display:none"></p>
       </div>
 
     </div>
