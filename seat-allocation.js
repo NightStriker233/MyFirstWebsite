@@ -6,15 +6,13 @@
  * - 翻牌动画逐个揭晓（可跳过），结果直接显示在网格上
  * - 日常换座：小组向左横移 / 整行向后移（循环）
  * - 人调换：分配后点选两个座位交换，自动重算同性标记
- * - 导入原来的位置（粘贴文本 / 上传文件 / 保存链接恢复）
- * - 保存座位表到服务器，关键词 URL 恢复
+ * - 导入原来的位置（粘贴文本 / 上传文件）
  * ============================================================ */
 'use strict';
 
 /* ---------------- 常量 ---------------- */
 
 const STORAGE_KEY = 'seatAllocationLayout_v3';
-const SAVE_API = '/api/seat-save';
 
 // 画笔类型：只有 seat 参与分配；gap 为固定过道列，不可绘制
 const PAINT_TYPES = ['seat', 'empty'];
@@ -88,10 +86,6 @@ function cacheDom() {
   dom.importFile = document.getElementById('importFile');
   dom.shiftLeftBtn = document.getElementById('shiftLeftBtn');
   dom.shiftBackBtn = document.getElementById('shiftBackBtn');
-  dom.saveKeyInput = document.getElementById('saveKeyInput');
-  dom.saveBtn = document.getElementById('saveBtn');
-  dom.copyLinkBtn = document.getElementById('copyLinkBtn');
-  dom.saveLink = document.getElementById('saveLink');
 }
 
 /* ---------------- localStorage ---------------- */
@@ -391,7 +385,6 @@ function updateEditLock() {
   dom.clearBtn.disabled = !state.filled;
   dom.shiftLeftBtn.disabled = !state.filled;
   dom.shiftBackBtn.disabled = !state.filled;
-  dom.saveBtn.disabled = !state.filled;
 }
 
 /* ---------------- 演示动画（翻牌揭晓） ---------------- */
@@ -722,91 +715,6 @@ function importSeatText(text) {
   updateStatus();
 }
 
-/* ---------------- 保存与恢复 ---------------- */
-
-function buildSaveData() {
-  return {
-    v: 1,
-    rows: state.rows,
-    seatCols: state.seatCols,
-    grid: state.grid,
-    names: state.names,
-    assigned: [...state.assigned.entries()],
-    sameSex: [...state.sameSexKeys],
-  };
-}
-
-// 应用保存的数据（恢复）
-function applySaveData(data) {
-  if (!data || !data.grid) throw new Error('数据无效');
-  state.rows = data.rows;
-  state.seatCols = data.seatCols;
-  state.cols = data.grid[0].length;
-  state.grid = data.grid;
-  state.names = data.names || [];
-  state.assigned = new Map(data.assigned || []);
-  state.sameSexKeys = new Set(data.sameSex || []);
-  state.genderMap = {};
-  for (const p of state.names) state.genderMap[p.name] = p.gender;
-  state.filled = true;
-  state.selectedCell = null;
-
-  dom.rowInput.value = state.rows;
-  dom.colInput.value = state.seatCols;
-  saveLayout();
-  setGridColumns();
-  renderSeatGrid();
-  renderAssigned();
-  dom.startBtn.textContent = '🔄 再抽一次';
-  dom.skipBtn.disabled = true;
-  dom.copyTextBtn.disabled = false;
-  dom.copyExcelBtn.disabled = false;
-  dom.downloadCsvBtn.disabled = false;
-  updateEditLock();
-  updateStatus();
-}
-
-async function saveSeat(key) {
-  const res = await fetch(SAVE_API, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ key, data: buildSaveData() }),
-  });
-  const d = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(d.error || '保存失败');
-  return d;
-}
-
-// 从 URL 提取关键词（支持 ?key= 与 /SeatAllocation.html/:key 两种）
-function getUrlKey() {
-  const q = new URLSearchParams(window.location.search).get('key');
-  if (q) return q;
-  const m = window.location.pathname.match(/\/SeatAllocation\.html\/([^/]+)$/);
-  return m ? decodeURIComponent(m[1]) : null;
-}
-
-async function tryRestoreFromUrl() {
-  const key = getUrlKey();
-  if (!key) return;
-  try {
-    const res = await fetch(SAVE_API + '?key=' + encodeURIComponent(key));
-    if (!res.ok) throw new Error('未找到该关键词的座位表');
-    const d = await res.json();
-    applySaveData(d.data);
-    dom.saveKeyInput.value = key;
-    dom.saveLink.textContent = buildShareUrl(key);
-    dom.saveLink.style.display = 'block';
-    dom.copyLinkBtn.style.display = 'inline-block';
-    dom.seatStatus.innerHTML += ' <span style="color:#16A34A">✓ 已从链接恢复</span>';
-  } catch (err) {
-    dom.seatStatus.innerHTML = '⚠️ 无法从链接恢复座位表：' + err.message;
-  }
-}
-
-function buildShareUrl(key) {
-  return window.location.origin + '/SeatAllocation.html/' + encodeURIComponent(key);
-}
-
 /* ---------------- 导出 ---------------- */
 
 // 计算字符串显示宽度（中文等宽字符按 2 计）
@@ -1010,29 +918,6 @@ function bindEvents() {
     };
     reader.readAsText(f);
   });
-
-  // 保存
-  dom.saveBtn.addEventListener('click', async () => {
-    const key = dom.saveKeyInput.value.trim();
-    if (!key) { alert('请先输入关键词'); return; }
-    dom.saveBtn.disabled = true;
-    dom.saveBtn.textContent = '保存中…';
-    try {
-      await saveSeat(key);
-      const url = buildShareUrl(key);
-      dom.saveLink.textContent = url;
-      dom.saveLink.style.display = 'block';
-      dom.copyLinkBtn.style.display = 'inline-block';
-    } catch (err) {
-      alert('保存失败：' + err.message);
-    } finally {
-      dom.saveBtn.disabled = !state.filled;
-      dom.saveBtn.textContent = '💾 保存';
-    }
-  });
-  dom.copyLinkBtn.addEventListener('click', () => {
-    if (dom.saveLink.textContent) copyText(dom.saveLink.textContent, dom.copyLinkBtn);
-  });
 }
 
 /* ---------------- 启动 ---------------- */
@@ -1058,7 +943,6 @@ function init() {
   renderSeatGrid();
   updateEditLock();
   updateStatus();
-  tryRestoreFromUrl();
 }
 
 document.addEventListener('DOMContentLoaded', init);

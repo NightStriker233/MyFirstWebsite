@@ -99,26 +99,5 @@ test('人调换：点选交换 + 同性重算', () => {
   assert.strictEqual(state.selectedCell, null);
   assert.ok(state.sameSexKeys instanceof Set);
 });
-
-test('保存数据组装/恢复往返', () => {
-  const data = buildSaveData();
-  assert.strictEqual(data.v, 1);
-  assert.ok(data.grid && data.assigned);
-  clearAssignment();
-  assert.strictEqual(state.filled, false);
-  applySaveData(JSON.parse(JSON.stringify(data)));
-  assert.strictEqual(state.filled, true);
-  assert.strictEqual(state.assigned.size, data.assigned.length);
-  assert.strictEqual(state.rows, data.rows);
-});
-
-test('URL key 提取', () => {
-  window.location = { search: '?key=class10grade1', pathname: '/SeatAllocation.html', origin: 'https://nightstriker.top' };
-  assert.strictEqual(getUrlKey(), 'class10grade1');
-  window.location = { search: '', pathname: '/SeatAllocation.html/class10grade1', origin: 'https://nightstriker.top' };
-  assert.strictEqual(getUrlKey(), 'class10grade1');
-  window.location = { search: '', pathname: '/SeatAllocation.html', origin: 'https://nightstriker.top' };
-  assert.strictEqual(getUrlKey(), null);
-});
 `;
 eval(code + testBody);

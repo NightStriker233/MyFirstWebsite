@@ -44,8 +44,7 @@
       color: #475569;
     }
 
-    .seat-config-row input[type="number"],
-    .seat-config-row input[type="text"] {
+    .seat-config-row input[type="number"] {
       width: 64px;
       padding: 6px 8px;
       border: 1px solid #CBD5E1;
@@ -55,8 +54,7 @@
       color: #1E293B;
     }
 
-    .seat-config-row input[type="number"]:focus,
-    .seat-config-row input[type="text"]:focus {
+    .seat-config-row input[type="number"]:focus {
       outline: none;
       border-color: #1E293B;
     }
@@ -261,17 +259,43 @@
       gap: 6px;
     }
 
-    /* ---- 名单 / 导入输入 ---- */
-    .name-input-wrap {
+    /* ---- 换座调整（布局卡片内） ---- */
+    .seat-adjust {
       display: flex;
-      align-items: flex-start;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid #E2E8F0;
+    }
+
+    .seat-adjust .name-format-hint {
+      margin-left: 4px;
+    }
+
+    /* ---- 名单（输入 + 导入两栏） ---- */
+    .two-col {
+      display: flex;
       gap: 16px;
+      align-items: stretch;
+    }
+
+    .name-col {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .col-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #475569;
+      margin-bottom: 6px;
     }
 
     #nameInput, #importText {
-      flex: 1;
       width: 100%;
-      min-height: 96px;
+      min-height: 76px;
       padding: 10px 12px;
       border: 1px solid #CBD5E1;
       font-size: 0.9rem;
@@ -280,6 +304,7 @@
       color: #1E293B;
       resize: vertical;
       line-height: 1.7;
+      box-sizing: border-box;
     }
 
     #nameInput:focus, #importText:focus {
@@ -288,7 +313,7 @@
     }
 
     .name-count {
-      margin-top: 8px;
+      margin-top: 6px;
       font-size: 0.85rem;
       color: #64748B;
     }
@@ -300,20 +325,20 @@
       margin-top: 6px;
     }
 
-    .save-link {
-      margin-top: 8px;
-      font-size: 0.85rem;
-      color: #1D4ED8;
-      word-break: break-all;
-      font-family: 'Consolas', 'Courier New', monospace;
-    }
-
-    /* ---- 操作按钮 ---- */
+    /* ---- 操作按钮（分组） ---- */
     .seat-actions {
       display: flex;
       flex-wrap: wrap;
+      align-items: center;
       gap: 10px;
-      margin-bottom: 20px;
+      margin-bottom: 14px;
+    }
+
+    .btn-group-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #94A3B8;
+      margin-right: 2px;
     }
 
     .btn-seat-lg {
@@ -324,8 +349,8 @@
     /* ---- 打印 ---- */
     @media print {
       .navbar, .seat-config-row, .paint-toolbar, .seat-legend,
-      .seat-actions, .name-input-wrap, .name-count, .name-format-hint,
-      .footer, .seat-desc, .save-link { display: none !important; }
+      .seat-actions, .seat-adjust, .two-col, .name-count, .name-format-hint,
+      .footer, .seat-desc, .btn-group-label { display: none !important; }
 
       body { background: #FFFFFF; }
       .tools-section { padding: 0; }
@@ -342,7 +367,7 @@
     @media (max-width: 600px) {
       .seat-card { padding: 14px; }
       .paint-toolbar .paint-hint { display: none; }
-      .name-input-wrap { flex-direction: column; }
+      .two-col { flex-direction: column; }
     }
   </style>
 </head>
@@ -366,7 +391,7 @@
       <h1 class="tools-title">🪑 座位分配</h1>
       <p class="seat-desc">输入行列数与学生姓名即可分配，如有特殊情况可使用「空位」来调整。保证分配随机。</p>
 
-      <!-- 布局与结果（合二为一：分配结果直接显示在网格上） -->
+      <!-- 布局与结果 -->
       <div class="seat-card">
         <h2>座位布局</h2>
 
@@ -395,54 +420,51 @@
           <span class="seat-legend-item"><span class="paint-swatch" style="background:transparent"></span>过道</span>
           <span class="seat-legend-item"><span class="paint-swatch" style="background:#FEF3C7;border-color:#F59E0B"></span>同性同桌</span>
         </div>
+
+        <!-- 换座调整（日常换座 + 人调换） -->
+        <div class="seat-adjust">
+          <span class="btn-group-label">换座调整</span>
+          <button class="btn-seat" id="shiftLeftBtn" disabled>⬅ 向左横移</button>
+          <button class="btn-seat" id="shiftBackBtn" disabled>⬇ 向后移</button>
+          <span class="name-format-hint">分配后点击两个座位可直接交换（人调换）；横移为小组循环左移，后移为整行循环后移。</span>
+        </div>
       </div>
 
-      <!-- 名单输入 -->
+      <!-- 名单（输入 + 导入，紧凑两栏） -->
       <div class="seat-card">
-        <h2>输入名单</h2>
-        <div class="name-input-wrap">
-          <textarea id="nameInput" placeholder="张三（男） 李四（女） 王五（男）&#10;赵六（女） 钱七（男） 孙八（女）&#10;（姓名后可用括号标性别，可不标；空格分隔）"></textarea>
+        <h2>名单</h2>
+        <div class="two-col">
+          <div class="name-col">
+            <div class="col-label">输入名单</div>
+            <textarea id="nameInput" placeholder="张三（男） 李四（女） 王五（男）&#10;赵六（女） 钱七（男） 孙八（女）&#10;（姓名后可用括号标性别，可不标；空格分隔）"></textarea>
+            <p class="name-count" id="nameCount">已识别 <strong>0</strong> 人</p>
+          </div>
+          <div class="name-col">
+            <div class="col-label">导入原来的位置</div>
+            <textarea id="importText" placeholder="张三 李四 | 王五 赵六&#10;孙七 周八 | 吴九 郑十&#10;（空位写「空」；支持 .csv / .txt 文件）"></textarea>
+            <div class="seat-config-row" style="margin-bottom:0">
+              <button class="btn-seat btn-seat-primary" id="importBtn">📥 导入</button>
+              <label class="btn-seat" style="cursor:pointer">📁 上传文件<input type="file" id="importFile" accept=".csv,.txt" style="display:none"></label>
+            </div>
+          </div>
         </div>
-        <p class="name-count" id="nameCount">已识别 <strong>0</strong> 人</p>
-        <p class="name-format-hint">格式：姓名之间用空格分隔，性别用括号标注（如「张三（男） 李四（女）」），全角（）半角()均可，不标也行。男女同桌优先，多出的人同性同桌会以橙色标注。</p>
+        <p class="name-format-hint">格式：姓名空格分隔，性别可加括号标注（全角（）半角()均可，不标也行）；男女同桌优先，多出的人同性同桌会以橙色标注。导入：每行一排，空格/竖线/逗号/制表符分隔。</p>
       </div>
 
-      <!-- 导入原来的位置 -->
-      <div class="seat-card">
-        <h2>导入原来的位置</h2>
-        <p class="name-format-hint">粘贴座位表（每行一排，名字用空格/竖线/制表符分隔，空位写「空」），或上传 .csv / .txt 文件。</p>
-        <div class="name-input-wrap">
-          <textarea id="importText" placeholder="张三 李四 | 王五 赵六&#10;孙七 周八 | 吴九 郑十&#10;（支持性别标注与同性标记 *，空位写「空」）"></textarea>
-        </div>
-        <div class="seat-config-row" style="margin-top:10px">
-          <button class="btn-seat btn-seat-primary" id="importBtn">📥 导入</button>
-          <label class="btn-seat" style="cursor:pointer">📁 上传文件<input type="file" id="importFile" accept=".csv,.txt" style="display:none"></label>
-        </div>
-      </div>
-
-      <!-- 操作 -->
+      <!-- 分配 -->
       <div class="seat-actions">
+        <span class="btn-group-label">分配</span>
         <button class="btn-seat btn-seat-primary btn-seat-lg" id="startBtn">🎲 开始分配</button>
         <button class="btn-seat btn-seat-lg" id="skipBtn" disabled>⏭ 跳过动画</button>
         <button class="btn-seat btn-seat-lg" id="clearBtn" disabled>🧹 清空结果</button>
-        <button class="btn-seat btn-seat-lg" id="shiftLeftBtn" disabled>⬅ 向左横移</button>
-        <button class="btn-seat btn-seat-lg" id="shiftBackBtn" disabled>⬇ 向后移</button>
+      </div>
+
+      <!-- 导出 -->
+      <div class="seat-actions">
+        <span class="btn-group-label">导出</span>
         <button class="btn-seat btn-seat-lg" id="copyTextBtn" disabled>📋 复制文本</button>
         <button class="btn-seat btn-seat-lg" id="copyExcelBtn" disabled>📋 复制表格</button>
         <button class="btn-seat btn-seat-lg" id="downloadCsvBtn" disabled>⬇️ 下载表格</button>
-      </div>
-      <p class="name-format-hint" style="margin:-10px 0 20px">💡 分配后点击两个座位可交换（人调换）；「向左横移」小组循环左移，「向后移」整行循环后移。</p>
-
-      <!-- 保存座位表 -->
-      <div class="seat-card">
-        <h2>保存座位表</h2>
-        <div class="seat-config-row">
-          <label>关键词 <input type="text" id="saveKeyInput" placeholder="如 class10grade1" maxlength="100" style="width:160px"></label>
-          <button class="btn-seat btn-seat-primary" id="saveBtn" disabled>💾 保存</button>
-          <button class="btn-seat" id="copyLinkBtn" style="display:none">📋 复制链接</button>
-        </div>
-        <p class="name-format-hint">保存后可通过链接随时恢复，如 nightstriker.top/SeatAllocation.html/class10grade1</p>
-        <p class="save-link" id="saveLink" style="display:none"></p>
       </div>
 
     </div>

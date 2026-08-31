@@ -1,5 +1,4 @@
 { "version": 2, "rewrites": [
   { "source": "/c/:code", "destination": "/api/clips?code=:code" },
-  { "source": "/SeatAllocation", "destination": "/SeatAllocation.html" },
-  { "source": "/SeatAllocation.html/:key", "destination": "/SeatAllocation.html?key=:key" }
+  { "source": "/SeatAllocation", "destination": "/SeatAllocation.html" }
 ] }
