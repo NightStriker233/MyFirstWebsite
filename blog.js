@@ -125,7 +125,7 @@ function renderTagCloud(posts) {
   });
   const tags = Object.entries(tagCount).sort((a, b) => b[1] - a[1]);
   document.getElementById('blogTags').innerHTML = tags.length > 0
-    ? '<span style="font-family:var(--mono);font-size:0.72rem;color:var(--faint);margin-right:8px">标签</span>' + tags.map(([t, c]) => '<span class="blog-tag-pill" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + ' (' + c + ')</span>').join('')
+    ? '<span style="font-family:var(--kai);font-size:0.9rem;color:var(--faint);margin-right:10px">标签</span>' + tags.map(([t, c]) => '<span class="blog-tag-pill" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + ' (' + c + ')</span>').join('')
     : '';
   document.querySelectorAll('.blog-tag-pill').forEach(el => {
     el.addEventListener('click', () => {
