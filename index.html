@@ -4,21 +4,21 @@
   <meta charset="UTF-8">
   <link rel="icon" type="image/png" href="/favicon.png">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Introduction of NightStriker</title>
+  <title>NightStriker</title>
+  <meta name="description" content="刘峻鹏（NightStriker）的个人主页：博客、工具箱与座位分配。">
   <link rel="stylesheet" href="style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
 
-  <!-- ============================
-       导航栏
-  ============================ -->
+  <!-- 导航 -->
   <nav class="navbar">
     <div class="container nav-container">
-      <a href="#" class="nav-logo"><img src="favicon.png" alt="NightStriker">NightStriker</a>
+      <a href="#" class="nav-logo"><img src="favicon.png" alt="">NightStriker</a>
       <div class="nav-links">
-        <a href="#about">关于我</a>
+        <a href="#about">关于</a>
         <a href="blog.html">博客</a>
         <a href="tools.html">工具箱</a>
         <a href="SeatAllocation.html">座位分配</a>
@@ -26,19 +26,17 @@
     </div>
   </nav>
 
-  <!-- ============================
-       首屏 Hero（欢迎页）
-  ============================ -->
+  <!-- 首屏 -->
   <section class="hero" id="intro">
     <div class="hero-bg"></div>
     <div class="container hero-content">
-      <div class="hero-badge">welcome</div>
-      <h1 class="hero-title">Hi，我是 <span class="gradient-text">NightStriker</span></h1>
+      <p class="hero-eyebrow">大连 · 高一 · OIer</p>
+      <h1 class="hero-title">NightStriker</h1>
       <p class="hero-subtitle">
-        这是我搭建的第一个网站！
+        这是我搭建的第一个网站。放一点写过的题解和随笔，也放几个自己会用的小工具。
       </p>
       <div class="hero-cta">
-        <a href="#about" class="btn btn-primary">✨ 进入主页</a>
+        <a href="#about" class="text-link">关于我 ↓</a>
       </div>
       <div class="hero-divider"></div>
       <p class="hero-quote" id="heroQuote"></p>
@@ -48,64 +46,55 @@
   <section class="about-section" id="about">
     <div class="container">
 
-      <!-- ---- 自我介绍 ---- -->
+      <!-- 自我介绍 -->
       <div class="section-header">
-        <h2>👤 关于我</h2>
+        <h2>关于我</h2>
       </div>
 
       <div class="intro-card">
-        <!-- ✏️ 把你的名字改在这里 -->
         <h3 class="intro-name">刘峻鹏</h3>
-        <!-- ✏️ 把你的自我介绍改在这里 -->
         <p class="intro-text">
           你好！我是来自大连的高一学生，也是一名 OIer。
         </p>
-        <!-- 社交平台 -->
         <div class="social-links">
-          <a href="https://github.com/NightStriker233" target="_blank" class="social-link">GitHub</a>
+          <a href="https://github.com/NightStriker233" target="_blank" rel="noopener" class="social-link">GitHub</a>
           <span class="social-sep">·</span>
-          <a href="https://www.luogu.com.cn/user/714084" target="_blank" class="social-link">洛谷</a>
+          <a href="https://www.luogu.com.cn/user/714084" target="_blank" rel="noopener" class="social-link">洛谷</a>
           <span class="social-sep">·</span>
-          <a href="https://atcoder.jp/users/HACKER_ljp_" target="_blank" class="social-link">AtCoder</a>
+          <a href="https://atcoder.jp/users/HACKER_ljp_" target="_blank" rel="noopener" class="social-link">AtCoder</a>
           <span class="social-sep">·</span>
-          <a href="https://www.xiaohongshu.com/user/profile/6676bca20000000007007f1e" target="_blank" class="social-link">小红书</a>
+          <a href="https://www.xiaohongshu.com/user/profile/6676bca20000000007007f1e" target="_blank" rel="noopener" class="social-link">小红书</a>
           <span class="social-sep">·</span>
-          <a href="https://music.163.com/#/user/home?id=9086397749" target="_blank" class="social-link">网易云</a>
+          <a href="https://music.163.com/#/user/home?id=9086397749" target="_blank" rel="noopener" class="social-link">网易云</a>
         </div>
       </div>
 
-      <!-- ---- 教育经历 ---- -->
-      <div class="section-header" style="margin-top: 60px;">
-        <h2>🎓 教育经历</h2>
-        <p>To be continue...</p>
+      <!-- 教育经历 -->
+      <div class="section-header" style="margin-top: 72px;">
+        <h2>教育经历</h2>
+        <p>to be continued</p>
       </div>
 
-      <!-- ✏️ 在这里增删教育经历条目 -->
       <div class="timeline">
 
         <div class="timeline-item">
-          <div class="timeline-dot"></div>
           <div class="timeline-content">
-            <!-- ✏️ 学校名称 -->
             <h4>大连市东北路小学</h4>
-            <!-- ✏️ 专业/学位 -->
-            <span class="timeline-meta">2017.9-2023.7</span>
+            <span class="timeline-meta">2017.9 – 2023.7</span>
           </div>
         </div>
 
         <div class="timeline-item">
-          <div class="timeline-dot"></div>
           <div class="timeline-content">
             <h4>大连市第二十一中学</h4>
-            <span class="timeline-meta">2023.9-2026.7</span>
+            <span class="timeline-meta">2023.9 – 2026.7</span>
           </div>
         </div>
 
         <div class="timeline-item">
-          <div class="timeline-dot"></div>
           <div class="timeline-content">
             <h4>大连市第二十四中学</h4>
-            <span class="timeline-meta">2026.9-2029.6（预期）</span>
+            <span class="timeline-meta">2026.9 – 2029.6（预期）</span>
           </div>
         </div>
 
@@ -113,17 +102,18 @@
     </div>
   </section>
 
-  <!-- 页脚 -->
   <footer class="footer">
     <div class="container">
-      <p>© 2026 NightStriker. All rights reserved. · <span id="visitorCount">…</span> 次访问</p>
+      <p>© 2026 NightStriker · <span id="visitorCount">—</span> 次访问</p>
     </div>
   </footer>
 
   <script src="script.js"></script>
   <script>
-    fetch('/api/stats',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:'/'})})
-      .then(r=>r.json()).then(d=>document.getElementById('visitorCount').textContent=d.total).catch(()=>{});
+    fetch('/api/stats', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: '/' }) })
+      .then(r => r.json())
+      .then(d => { document.getElementById('visitorCount').textContent = d.total; })
+      .catch(() => {});
   </script>
 </body>
 </html>

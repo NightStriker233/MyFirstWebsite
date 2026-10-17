@@ -102,7 +102,7 @@ async function loadPosts() {
     renderTagCloud(allPosts);
     filterAndRender();
   } catch (err) {
-    postsList.innerHTML = '<div class="blog-empty" style="color:#DC2626">⚠️ 文章加载失败：' + err.message + '</div>';
+    postsList.innerHTML = '<div class="blog-empty" style="color:var(--accent)">加载失败：' + err.message + '</div>';
   }
 }
 
@@ -125,7 +125,7 @@ function renderTagCloud(posts) {
   });
   const tags = Object.entries(tagCount).sort((a, b) => b[1] - a[1]);
   document.getElementById('blogTags').innerHTML = tags.length > 0
-    ? '<span style="font-size:0.8rem;color:#94A3B8;margin-right:8px">标签：</span>' + tags.map(([t, c]) => '<span class="blog-tag-pill" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + ' (' + c + ')</span>').join('')
+    ? '<span style="font-family:var(--mono);font-size:0.72rem;color:var(--faint);margin-right:8px">标签</span>' + tags.map(([t, c]) => '<span class="blog-tag-pill" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + ' (' + c + ')</span>').join('')
     : '';
   document.querySelectorAll('.blog-tag-pill').forEach(el => {
     el.addEventListener('click', () => {
@@ -137,7 +137,7 @@ function renderTagCloud(posts) {
 
 function renderPosts(posts) {
   if (posts.length === 0) {
-    postsList.innerHTML = '<div class="blog-empty"><div style="font-size:3rem;margin-bottom:12px">📭</div><p>没有匹配的文章</p></div>';
+    postsList.innerHTML = '<div class="blog-empty"><p>没有匹配的文章。</p></div>';
     return;
   }
     postsList.innerHTML = posts.map(p => `
@@ -206,13 +206,13 @@ function openEditor(postId) {
   tagsInput.value = '';
   contentInput.value = '';
   feedback.style.display = 'none';
-  livePreview.innerHTML = '<p style="color:#94A3B8">在左侧输入内容，这里实时预览……</p>';
+  livePreview.innerHTML = '<p style="color:var(--faint)">在左侧输入内容，这里实时预览……</p>';
 
   // 实时预览
   contentInput.oninput = () => {
     const val = contentInput.value.trim();
     if (!val) {
-      livePreview.innerHTML = '<p style="color:#94A3B8">在左侧输入内容，这里实时预览……</p>';
+      livePreview.innerHTML = '<p style="color:var(--faint)">在左侧输入内容，这里实时预览……</p>';
     } else {
       livePreview.innerHTML = renderContent(val);
     }

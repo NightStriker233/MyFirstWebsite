@@ -150,10 +150,10 @@ document.querySelectorAll('.tools-tab').forEach(tab => {
       const fullUrl = window.location.origin + data.url;
       document.getElementById('clipsResult').style.display = 'block';
       document.getElementById('clipsResult').innerHTML =
-        '<p style="font-weight:600;color:#16A34A">✅ 分享链接已生成</p>' +
+        '<p style="font-weight:600;color:#3E6248">分享链接已生成</p>' +
         '<div class="clips-url-box"><code>' + fullUrl + '</code></div>' +
-        '<button class="btn-secondary btn-sm" onclick="navigator.clipboard.writeText(\'' + fullUrl + '\')">📋 复制链接</button>' +
-        (data.burn_after_read ? '<p style="color:#DC2626;font-size:0.8rem;margin-top:8px">⚠️ 阅后即焚：查看一次后自动删除</p>' : '');
+        '<button class="btn-secondary btn-sm" onclick="navigator.clipboard.writeText(\'' + fullUrl + '\')">复制链接</button>' +
+        (data.burn_after_read ? '<p style="color:var(--accent);font-size:0.8rem;margin-top:8px">阅后即焚：查看一次后自动删除</p>' : '');
     } catch (err) {
       showClipsFeedback(err.message, 'error');
     } finally {
@@ -261,7 +261,7 @@ document.querySelectorAll('.tools-tab').forEach(tab => {
       marker.setAttribute('orient', 'auto');
       const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
       poly.setAttribute('points', '0 0, 12 4, 0 8');
-      poly.setAttribute('fill', '#94A3B8');
+      poly.setAttribute('fill', '#A8A396');
       marker.appendChild(poly);
       defs.appendChild(marker);
       svg.appendChild(defs);
@@ -291,7 +291,7 @@ document.querySelectorAll('.tools-tab').forEach(tab => {
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         const sx = from.x, sy = from.y;
         path.setAttribute('d', 'M ' + (sx + nodeR) + ' ' + sy + ' C ' + (sx + 50) + ' ' + (sy - 36) + ' ' + (sx) + ' ' + (sy - 36) + ' ' + (sx - nodeR) + ' ' + sy);
-        path.setAttribute('stroke', '#94A3B8'); path.setAttribute('stroke-width', '2.5');
+        path.setAttribute('stroke', '#A8A396'); path.setAttribute('stroke-width', '2.5');
         path.setAttribute('fill', 'none');
         if (directed) path.setAttribute('marker-end', 'url(#arrowhead)');
         g.appendChild(path);
@@ -321,7 +321,7 @@ document.querySelectorAll('.tools-tab').forEach(tab => {
       const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
       line.setAttribute('x1', sx); line.setAttribute('y1', sy);
       line.setAttribute('x2', ex); line.setAttribute('y2', ey);
-      line.setAttribute('stroke', '#64748B'); line.setAttribute('stroke-width', '2.5');
+      line.setAttribute('stroke', '#6E6B62'); line.setAttribute('stroke-width', '2.5');
       if (directed) line.setAttribute('marker-end', 'url(#arrowhead)');
       g.appendChild(line);
 
@@ -362,7 +362,7 @@ document.querySelectorAll('.tools-tab').forEach(tab => {
 
       const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       text.setAttribute('text-anchor', 'middle'); text.setAttribute('dy', '5');
-      text.setAttribute('fill', '#1E293B'); text.setAttribute('font-size', '15');
+      text.setAttribute('fill', '#1A1A18'); text.setAttribute('font-size', '15');
       text.setAttribute('font-weight', '700');
       text.textContent = label; g.appendChild(text);
       svg.appendChild(g);
@@ -483,7 +483,7 @@ document.querySelectorAll('.tools-tab').forEach(tab => {
     if (inputs.length === 0) inputs.push('');
 
     btn.disabled = true; status.textContent = '运行中…';
-    output.innerHTML = '<p style="color:#94A3B8">执行中……</p>';
+    output.innerHTML = '<p style="color:var(--faint)">执行中……</p>';
 
     const results = [];
     for (let i = 0; i < inputs.length; i++) {
@@ -507,7 +507,7 @@ document.querySelectorAll('.tools-tab').forEach(tab => {
     }
 
     output.innerHTML = results.map(r => {
-      if (r.error) return '<div class="runner-case"><div class="runner-case-title">测试 ' + (r.index + 1) + ' ❌</div><pre class="runner-pre runner-pre-err">网络错误: ' + escapeHtml(r.error) + '</pre></div>';
+      if (r.error) return '<div class="runner-case"><div class="runner-case-title">测试 ' + (r.index + 1) + '</div><pre class="runner-pre runner-pre-err">网络错误: ' + escapeHtml(r.error) + '</pre></div>';
       const d = r.data;
       let out = '';
       if (d.compiler_message) out += d.compiler_message + '\n';
@@ -515,12 +515,12 @@ document.querySelectorAll('.tools-tab').forEach(tab => {
       if (!out) out = d.status || '(无输出)';
 
       let statusText = '', statusCls = '';
-      if (d.status === '0') { statusText = '通过 ✅'; statusCls = 'runner-ok'; }
+      if (d.status === '0') { statusText = '通过'; statusCls = 'runner-ok'; }
       else if (d.status === '1') { statusText = 'CE (编译错误)'; statusCls = 'runner-ce'; }
       else if (d.status === '2') { statusText = 'RE/TLE (运行错误/超时)'; statusCls = 'runner-tle'; }
       else { statusText = d.status || '完成'; statusCls = 'runner-ok'; }
 
-      return '<div class="runner-case"><div class="runner-case-title">测试 ' + (r.index + 1) + ' <span class="' + statusCls + '">' + statusText + '</span>' + (r.input ? '<span style="font-size:0.75rem;color:#C4B5A5;margin-left:8px">输入: ' + escapeHtml(r.input.slice(0, 40)) + (r.input.length > 40 ? '…' : '') + '</span>' : '') + '</div><pre class="runner-pre">' + escapeHtml(out) + '</pre></div>';
+      return '<div class="runner-case"><div class="runner-case-title">测试 ' + (r.index + 1) + ' <span class="' + statusCls + '">' + statusText + '</span>' + (r.input ? '<span style="font-size:0.75rem;color:var(--faint);margin-left:8px">输入: ' + escapeHtml(r.input.slice(0, 40)) + (r.input.length > 40 ? '…' : '') + '</span>' : '') + '</div><pre class="runner-pre">' + escapeHtml(out) + '</pre></div>';
     }).join('');
 
     status.textContent = '完成 (' + results.length + ' 组)';
@@ -559,7 +559,7 @@ document.querySelectorAll('.tools-tab').forEach(tab => {
       if (i === 0) md += '| ' + vals.map(() => '---').join(' | ') + ' |\n';
     });
     navigator.clipboard.writeText(md);
-    document.getElementById('tableFeedback').textContent = '✅ Markdown 表格已复制';
+    document.getElementById('tableFeedback').textContent = 'Markdown 表格已复制';
     setTimeout(() => document.getElementById('tableFeedback').textContent = '', 2000);
   });
 

@@ -504,7 +504,7 @@ function finishAssign() {
   state.animCells = [];
   state.filled = true;
   dom.startBtn.disabled = false;
-  dom.startBtn.textContent = '🔄 再抽一次';
+  dom.startBtn.textContent = '再抽一次';
   dom.skipBtn.disabled = true;
   dom.copyTextBtn.disabled = false;
   dom.copyExcelBtn.disabled = false;
@@ -529,7 +529,7 @@ function clearAssignment(skipRender) {
   state.genderMap = {};
   state.filled = false;
   dom.startBtn.disabled = false;
-  dom.startBtn.textContent = '🎲 开始分配';
+  dom.startBtn.textContent = '开始分配';
   dom.skipBtn.disabled = true;
   dom.copyTextBtn.disabled = true;
   dom.copyExcelBtn.disabled = true;
@@ -550,7 +550,7 @@ function updateStatus() {
     + ' · 已分配 <strong>' + filled + '</strong>'
     + ' · 空座 <strong>' + (total - filled) + '</strong>'
     + ' · 名单 <strong>' + state.names.length + '</strong> 人';
-  if (sameGroups > 0) html += ' · <span style="color:#B45309">同性同桌 ' + sameGroups + ' 组</span>';
+  if (sameGroups > 0) html += ' · <span style="color:#7A4A12">同性同桌 ' + sameGroups + ' 组</span>';
   dom.seatStatus.innerHTML = html;
 }
 
@@ -767,7 +767,7 @@ function importSeatText(text) {
   setGridColumns();
   renderSeatGrid();
   renderAssigned();
-  dom.startBtn.textContent = '🔄 再抽一次';
+  dom.startBtn.textContent = '再抽一次';
   dom.skipBtn.disabled = true;
   dom.copyTextBtn.disabled = false;
   dom.copyExcelBtn.disabled = false;
@@ -848,7 +848,7 @@ function buildTsv() {
 function copyText(text, btn) {
   const orig = btn.textContent;
   const done = () => {
-    btn.textContent = '✓ 已复制';
+    btn.textContent = '已复制';
     setTimeout(() => { btn.textContent = orig; }, 1500);
   };
   if (navigator.clipboard && navigator.clipboard.writeText) {

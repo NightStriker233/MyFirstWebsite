@@ -4,12 +4,13 @@
   <meta charset="UTF-8">
   <link rel="icon" type="image/png" href="/favicon.png">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>博客 - NightStriker</title>
+  <title>博客 — NightStriker</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
   <script>
@@ -19,7 +20,6 @@
       var key = params.get('key');
       if (key) {
         localStorage.setItem('blog_key', key);
-        // 清理 URL 中的 key 参数
         window.history.replaceState({}, '', window.location.pathname);
       }
     })();
@@ -27,42 +27,40 @@
 </head>
 <body>
 
-  <!-- 导航栏 -->
   <nav class="navbar">
     <div class="container nav-container">
-      <a href="index.html" class="nav-logo"><img src="favicon.png" alt="NightStriker">NightStriker</a>
+      <a href="index.html" class="nav-logo"><img src="favicon.png" alt="">NightStriker</a>
       <div class="nav-links">
-        <a href="index.html#about">关于我</a>
-        <a href="blog.html" style="color:#1E293B">博客</a>
+        <a href="index.html#about">关于</a>
+        <a href="blog.html" aria-current="page">博客</a>
         <a href="tools.html">工具箱</a>
         <a href="SeatAllocation.html">座位分配</a>
       </div>
     </div>
   </nav>
 
-  <!-- 博客主体 -->
   <section class="blog-section">
     <div class="container">
 
-      <!-- 列表视图 -->
+      <!-- 列表 -->
       <div id="listView">
         <div class="blog-header">
-          <h1>📝 博客</h1>
-          <div style="display:flex;gap:10px;align-items:center">
-            <input type="text" id="blogSearch" class="form-input" placeholder="🔍 搜索标题或标签……" style="width:200px;padding:8px 12px;font-size:0.85rem">
-            <button class="btn-secondary" id="showEditorBtn">✏️ 写文章</button>
+          <h1>博客</h1>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="text" id="blogSearch" class="form-input" placeholder="搜索标题或标签……" aria-label="搜索文章" style="width:190px;padding:7px 11px;font-size:0.84rem">
+            <button class="btn-secondary" id="showEditorBtn">写文章</button>
           </div>
         </div>
         <div class="blog-tags" id="blogTags"></div>
         <div class="blog-posts-list" id="postsList">
           <div class="loading-state">
             <div class="loading-spinner"></div>
-            <p>加载文章中…</p>
+            <p>读取中……</p>
           </div>
         </div>
       </div>
 
-      <!-- 编辑器视图（隐藏） -->
+      <!-- 编辑器 -->
       <div id="editorView" style="display:none">
         <a href="#" class="back-link" id="backToListFromEditor">← 返回文章列表</a>
         <div class="blog-editor">
@@ -71,35 +69,35 @@
             <input type="text" id="postTitleInput" class="form-input" placeholder="文章标题" maxlength="200">
           </div>
           <div class="form-group">
-            <input type="text" id="postTagsInput" class="form-input" placeholder="标签（逗号分隔，如 OI,题解,DP）" maxlength="500">
+            <input type="text" id="postTagsInput" class="form-input" placeholder="标签，用逗号分隔，如 OI, 题解, DP" maxlength="500">
           </div>
           <div class="editor-workspace">
             <div class="editor-pane">
-              <div class="pane-label">📝 编辑（Markdown + LaTeX）</div>
-              <textarea id="postContentInput" class="form-input form-textarea editor-textarea" placeholder="支持 Markdown 语法和 $\LaTeX$ 公式&#10;&#10;# 标题&#10;**粗体** *斜体* &#10;- 列表&#10;&#10;行内公式: $E=mc^2$&#10;块公式: $$\sum_{i=1}^{n} x_i$$&#10;&#10;```cpp&#10;int main() { return 0; }&#10;```"></textarea>
+              <div class="pane-label">正文 · Markdown + LaTeX</div>
+              <textarea id="postContentInput" class="form-input form-textarea editor-textarea" placeholder="支持 Markdown 语法和 $\LaTeX$ 公式&#10;&#10;# 标题&#10;**粗体** *斜体*&#10;- 列表&#10;&#10;行内公式: $E=mc^2$&#10;块公式: $$\sum_{i=1}^{n} x_i$$&#10;&#10;```cpp&#10;int main() { return 0; }&#10;```"></textarea>
             </div>
             <div class="preview-pane">
-              <div class="pane-label">👁 预览</div>
+              <div class="pane-label">预览</div>
               <div class="preview-content" id="livePreview">
-                <p style="color:#94A3B8">在左侧输入内容，这里实时预览……</p>
+                <p style="color:#9B978C">左侧输入，这里同步预览。</p>
               </div>
             </div>
           </div>
           <div id="editorFeedback" class="form-feedback" style="display:none"></div>
           <div class="blog-editor-actions">
-            <button class="btn btn-primary" id="savePostBtn">发布文章</button>
+            <button class="btn btn-primary" id="savePostBtn">发布</button>
             <button class="btn-secondary" id="cancelEditBtn">取消</button>
             <button class="btn-danger btn-sm" id="deletePostBtn" style="display:none;margin-left:auto">删除文章</button>
           </div>
         </div>
       </div>
 
-      <!-- 文章详情视图（隐藏） -->
+      <!-- 详情 -->
       <div id="detailView" style="display:none">
         <a href="#" class="back-link" id="backToListFromDetail">← 返回文章列表</a>
         <div class="post-detail-layout">
           <div class="post-toc" id="postToc" style="display:none">
-            <div class="toc-title">📑 目录</div>
+            <div class="toc-title">目录</div>
             <nav class="toc-nav" id="tocNav"></nav>
           </div>
           <div class="post-full" id="postFull"></div>
@@ -112,8 +110,15 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   <script src="blog.js"></script>
   <script>
-    fetch('/api/stats',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:'/blog'})})
-      .then(r=>r.json()).then(d=>{var el=document.createElement('span');el.style.cssText='font-size:0.82rem;color:#94A3B8;display:block;text-align:center;padding:10px 0';el.textContent='🌐 '+d.total+' 次访问';document.querySelector('.blog-section').appendChild(el);}).catch(()=>{});
+    fetch('/api/stats', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: '/blog' }) })
+      .then(r => r.json())
+      .then(d => {
+        var el = document.createElement('p');
+        el.className = 'page-views';
+        el.textContent = '本页 ' + d.total + ' 次访问';
+        document.querySelector('.blog-section .container').appendChild(el);
+      })
+      .catch(() => {});
   </script>
 </body>
 </html>

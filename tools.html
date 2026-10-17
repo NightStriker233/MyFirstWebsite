@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
@@ -20,9 +20,9 @@
     <div class="container nav-container">
       <a href="index.html" class="nav-logo"><img src="favicon.png" alt="NightStriker">NightStriker</a>
       <div class="nav-links">
-        <a href="index.html#about">关于我</a>
+        <a href="index.html#about">关于</a>
         <a href="blog.html">博客</a>
-        <a href="tools.html" style="color:#1E293B;font-weight:700">工具箱</a>
+        <a href="tools.html" aria-current="page">工具箱</a>
         <a href="SeatAllocation.html">座位分配</a>
       </div>
     </div>
@@ -30,18 +30,18 @@
 
   <section class="tools-section">
     <div class="container">
-      <h1 class="tools-title">🧰 工具箱</h1>
+      <h1 class="tools-title">工具箱</h1>
 
       <!-- Tab 导航 -->
       <div class="tools-tabs" id="tabsNav">
-        <button class="tools-tab active" data-tab="base64">🔐 Base64</button>
-        <button class="tools-tab" data-tab="diff">🔍 Diff</button>
-        <button class="tools-tab" data-tab="random">🎲 随机数</button>
-        <button class="tools-tab" data-tab="clips">📋 剪切板</button>
-        <button class="tools-tab" data-tab="graph">🕸 图论</button>
-        <button class="tools-tab" data-tab="runner">▶ 代码运行</button>
-        <button class="tools-tab" data-tab="table">📊 表格</button>
-        <button class="tools-tab" data-tab="base">🔢 进制</button>
+        <button class="tools-tab active" data-tab="base64">Base64</button>
+        <button class="tools-tab" data-tab="diff">Diff</button>
+        <button class="tools-tab" data-tab="random">随机数</button>
+        <button class="tools-tab" data-tab="clips">剪切板</button>
+        <button class="tools-tab" data-tab="graph">图论</button>
+        <button class="tools-tab" data-tab="runner">代码运行</button>
+        <button class="tools-tab" data-tab="table">表格</button>
+        <button class="tools-tab" data-tab="base">进制</button>
       </div>
 
       <!-- ==================== Base64 ==================== -->
@@ -59,7 +59,7 @@
         <div class="tool-actions">
           <button class="btn btn-primary" id="base64EncodeBtn">明文 → Base64</button>
           <button class="btn-secondary" id="base64DecodeBtn">Base64 → 明文</button>
-          <button class="btn-secondary btn-sm" id="base64CopyBtn">📋 复制结果</button>
+          <button class="btn-secondary btn-sm" id="base64CopyBtn">复制结果</button>
         </div>
         <div id="base64Feedback" class="form-feedback" style="display:none"></div>
       </div>
@@ -110,7 +110,7 @@
           </div>
           <div class="tool-actions">
             <button class="btn btn-primary" id="randBtn">生成</button>
-            <button class="btn-secondary btn-sm" id="randCopyBtn">📋 复制</button>
+            <button class="btn-secondary btn-sm" id="randCopyBtn">复制</button>
           </div>
           <textarea id="randOutput" class="tool-textarea" rows="4" readonly placeholder="结果将显示在这里……"></textarea>
         </div>
@@ -168,9 +168,9 @@
             </div>
           </div>
           <div class="tool-actions">
-            <button class="btn-primary btn-sm" id="graphExportBtn">📤 导出矩阵</button>
-            <button class="btn-secondary btn-sm" id="graphClearBtn">🗑 清空</button>
-            <span id="graphStats" style="font-size:0.82rem;color:#94A3B8;margin-left:8px"></span>
+            <button class="btn-primary btn-sm" id="graphExportBtn">导出矩阵</button>
+            <button class="btn-secondary btn-sm" id="graphClearBtn">清空</button>
+            <span id="graphStats" style="font-size:0.82rem;color:var(--faint);margin-left:8px"></span>
           </div>
         </div>
         <div id="graphHint" class="form-feedback" style="display:none"></div>
@@ -180,15 +180,15 @@
         <div class="graph-export" id="graphExportPanel" style="display:none">
           <label class="tool-label">邻接矩阵 / 边列表</label>
           <textarea id="graphExportText" class="tool-textarea" rows="6" readonly></textarea>
-          <button class="btn-secondary btn-sm" id="graphCopyBtn2">📋 复制</button>
+          <button class="btn-secondary btn-sm" id="graphCopyBtn2">复制</button>
         </div>
       </div>
 
       <!-- ==================== 在线代码运行器 ==================== -->
       <div class="tools-panel" id="panel-runner">
         <div class="runner-notice">
-          ⚠️ 使用 <strong>Wandbox</strong> 在线编译（C++ gcc-head / Python 3.12）。
-          更多选项前往 <a href="https://wandbox.org/" target="_blank" style="color:#4F46E5">Wandbox.org</a>。
+          编译由 <strong>Wandbox</strong> 提供 在线编译（C++ gcc-head / Python 3.12）。
+          更多选项前往 <a href="https://wandbox.org/" target="_blank" >Wandbox.org</a>。
         </div>
         <div class="runner-topbar">
           <select id="runnerLang" class="form-input" style="width:auto">
@@ -196,7 +196,7 @@
             <option value="python">Python 3.12</option>
           </select>
           <button class="btn btn-primary" id="runnerBtn">▶ 运行代码</button>
-          <span id="runnerStatus" style="font-size:0.85rem;color:#94A3B8"></span>
+          <span id="runnerStatus" style="font-size:0.85rem;color:var(--faint)"></span>
         </div>
         <div class="runner-main">
           <div class="runner-editor-wrap">
@@ -207,7 +207,7 @@
             <textarea id="runnerInput" class="tool-textarea" placeholder="输入数据……&#10;===&#10;第二组输入……" rows="4"></textarea>
             <label class="tool-label">输出结果</label>
             <div class="runner-output" id="runnerOutput">
-              <p style="color:#94A3B8">点击运行查看结果……</p>
+              <p style="color:var(--faint)">点击运行查看结果……</p>
             </div>
           </div>
         </div>
@@ -222,8 +222,8 @@
         </div>
         <div id="tableEditor" style="overflow-x:auto"></div>
         <div style="margin-top:12px;display:flex;gap:10px;align-items:center">
-          <button class="btn-secondary btn-sm" id="tableExportMd">📋 复制 Markdown</button>
-          <span id="tableFeedback" style="font-size:0.8rem;color:#94A3B8"></span>
+          <button class="btn-secondary btn-sm" id="tableExportMd">复制 Markdown</button>
+          <span id="tableFeedback" style="font-size:0.8rem;color:var(--faint)"></span>
         </div>
       </div>
 

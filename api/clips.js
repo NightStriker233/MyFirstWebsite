@@ -40,7 +40,7 @@ export default async function handler(req, res) {
           [code]
         );
         if (r.rows.length === 0) {
-          return res.status(404).send(wrapHTML("404", "<h2>🔗 链接不存在或已过期</h2><p>该剪切板内容可能已被删除。</p>"));
+          return res.status(404).send(wrapHTML("404", "<h2>链接不存在或已过期</h2><p>该剪切板内容可能已被删除。</p>"));
         }
         const clip = r.rows[0];
         // 检查过期
@@ -55,10 +55,10 @@ export default async function handler(req, res) {
           await client.query("DELETE FROM clips WHERE id = $1", [clip.id]);
         }
         // 返回 HTML 页面
-        const burnNote = clip.burn_after_read ? '<p style="color:#DC2626;font-size:0.85rem">⚠️ 此内容已被删除（阅后即焚）</p>' : '';
+        const burnNote = clip.burn_after_read ? '<p style="color:var(--accent);font-size:0.85rem">此内容已被删除（阅后即焚）</p>' : '';
         return res.status(200).send(wrapHTML("剪切板 - " + code, `
-          <pre style="background:#FAFAF9;padding:24px;border-radius:8px;font-size:0.95rem;line-height:1.8;white-space:pre-wrap;word-break:break-all;border:1px solid #E8E4E0">${escapeHtml(clip.content)}</pre>
-          <p style="color:#94A3B8;font-size:0.8rem;margin-top:12px">${clip.view_count + 1} 次浏览 · 创建于 ${new Date(clip.created_at).toLocaleString("zh-CN")}</p>
+          <pre style="background:#F3F1E9;padding:20px 22px;border-radius:2px;font-size:0.9rem;line-height:1.8;white-space:pre-wrap;word-break:break-all;border:1px solid #E6E2D6;font-family:"JetBrains Mono",Consolas,monospace">${escapeHtml(clip.content)}</pre>
+          <p style="color:var(--faint);font-size:0.8rem;margin-top:12px">${clip.view_count + 1} 次浏览 · 创建于 ${new Date(clip.created_at).toLocaleString("zh-CN")}</p>
           ${burnNote}
         `));
       } finally { client.release(); }
@@ -102,10 +102,10 @@ function wrapHTML(title, body) {
   <title>${title}</title>
   <link rel="stylesheet" href="/style.css">
 </head>
-<body style="background:#FAFAF9;min-height:100vh;display:flex;align-items:center;justify-content:center">
-  <div style="max-width:700px;width:90%;background:#fff;border:1px solid #E8E4E0;border-radius:8px;padding:40px">
+<body style="background:#FBFAF6;color:#3B3A34;font-family:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center">
+  <div style="max-width:680px;width:90%;background:transparent;border:1px solid #D8D3C5;border-radius:2px;padding:36px 40px">
     ${body}
-    <p style="margin-top:24px"><a href="/tools.html" style="color:#1E293B">← 返回工具箱</a></p>
+    <p style="margin-top:24px"><a href="/tools.html" style="color:var(--ink)">← 返回工具箱</a></p>
   </div>
 </body>
 </html>`;
