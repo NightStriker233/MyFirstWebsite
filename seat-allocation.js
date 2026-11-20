@@ -15,6 +15,9 @@
 const DEFAULT_ROWS = 6;
 const DEFAULT_SEAT_COLS = 8; // 每排座位数（两列一组自动加过道列）
 const GAP_WIDTH = '16px';    // 过道列宽（窄）
+const ROLL_TICKS = 3;        // 每个座位揭晓前随机滚动的次数
+const ANIM_PER_CELL_MS = 350; // 每个座位总展示时长（慢速：48 座约 17 秒）
+const ROLL_TICK_MS = Math.round(ANIM_PER_CELL_MS / ROLL_TICKS);
 
 // 生成布局：每两列座位为一组（同桌），组与组之间插入一列过道(gap)
 function buildLayout(rows, seatCols) {
@@ -48,7 +51,8 @@ const state = {
   assigning: false,    // 是否正在动画分配中
   animTimer: null,     // 动画定时器句柄
   animIndex: 0,        // 动画当前进度
-  animCells: [],       // 待翻牌的格子列表
+  animCells: [],       // 待揭晓的格子列表
+  rollPhase: 0,        // 随机滚动的 tick 计数
   names: [],           // 本次解析出的名单 [{name, gender}]
   genderMap: {},       // name → gender（用于调换后重算同性）
   assigned: null,      // 分配结果 Map<"r,c", name>；null = 未分配
@@ -431,6 +435,8 @@ function startAssign() {
   state.assigning = true;
   state.animCells = animCells;
   state.animIndex = 0;
+  state.rollPhase = 0;
+  const allNames = state.names.map((p) => p.name);
   dom.startBtn.disabled = true;
   dom.skipBtn.disabled = false;
   dom.copyTextBtn.disabled = true;
@@ -439,21 +445,33 @@ function startAssign() {
   updateEditLock();
   updateStatus();
 
+  // 随机滚动定格：每个座位先随机闪现 ROLL_TICKS 次名字，然后定格为真实名字
   state.animTimer = setInterval(() => {
     if (state.animIndex >= state.animCells.length) {
       clearInterval(state.animTimer);
       finishAssign();
       return;
     }
-    const { cell, name, same } = state.animCells[state.animIndex++];
-    fillCell(cell, name, same, true); // 翻牌
-  }, 260);
+    const { cell, name, same } = state.animCells[state.animIndex];
+    if (state.rollPhase < ROLL_TICKS) {
+      // 滚动阶段：快速随机换名字
+      cell.className = 'seat-cell type-seat rolling';
+      cell.textContent = allNames[Math.floor(Math.random() * allNames.length)];
+      state.rollPhase++;
+    } else {
+      // 定格为真实名字
+      fillCell(cell, name, same, true);
+      state.rollPhase = 0;
+      state.animIndex++;
+    }
+  }, ROLL_TICK_MS);
 }
 
-// 跳过动画：立即翻完所有牌
+// 跳过动画：立即定格全部名字
 function skipAnim() {
   if (!state.assigning) return;
   clearInterval(state.animTimer);
+  state.rollPhase = 0;
   for (const { cell, name, same } of state.animCells) {
     fillCell(cell, name, same, false);
   }
