@@ -4,7 +4,7 @@
  * - 姓名支持「张三（男）」性别标注，男女同桌优先，
  *   无法避免时同性同桌并以橙色标注
  * - 翻牌动画逐个揭晓（可跳过），结果直接显示在网格上
- * - 日常换座：小组左右横移 / 整行前后移动（循环）
+ * - 日常换座：小组向左横移 / 整行向后移（循环）
  * - 人调换：分配后点选两个座位交换，自动重算同性标记
  * - 导入原来的位置（粘贴文本 / 上传文件）
  * ============================================================ */
@@ -12,12 +12,14 @@
 
 /* ---------------- 常量 ---------------- */
 
+const STORAGE_KEY = 'seatAllocationLayout_v4';
+
+// 画笔类型：只有 seat 参与分配；gap 为固定过道列，不可绘制
+const PAINT_TYPES = ['seat', 'empty'];
+
 const DEFAULT_ROWS = 6;
 const DEFAULT_SEAT_COLS = 8; // 每排座位数（两列一组自动加过道列）
 const GAP_WIDTH = '16px';    // 过道列宽（窄）
-const ROLL_TICKS = 3;        // 每个座位揭晓前随机滚动的次数
-const ANIM_PER_CELL_MS = 350; // 每个座位总展示时长（慢速：48 座约 17 秒）
-const ROLL_TICK_MS = Math.round(ANIM_PER_CELL_MS / ROLL_TICKS);
 
 // 生成布局：每两列座位为一组（同桌），组与组之间插入一列过道(gap)
 function buildLayout(rows, seatCols) {
@@ -51,8 +53,7 @@ const state = {
   assigning: false,    // 是否正在动画分配中
   animTimer: null,     // 动画定时器句柄
   animIndex: 0,        // 动画当前进度
-  animCells: [],       // 待揭晓的格子列表
-  rollPhase: 0,        // 随机滚动的 tick 计数
+  animCells: [],       // 待翻牌的格子列表
   names: [],           // 本次解析出的名单 [{name, gender}]
   genderMap: {},       // name → gender（用于调换后重算同性）
   assigned: null,      // 分配结果 Map<"r,c", name>；null = 未分配
@@ -89,6 +90,36 @@ function cacheDom() {
   dom.shiftBackBtn = document.getElementById('shiftBackBtn');
 }
 
+/* ---------------- localStorage ---------------- */
+
+function loadLayout() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (!data || !Array.isArray(data.grid) || !data.grid.length) return null;
+    const validTypes = ['seat', 'empty', 'gap'];
+    const w = data.grid[0].length;
+    for (const row of data.grid) {
+      if (!Array.isArray(row) || row.length !== w) return null;
+      for (const t of row) if (!validTypes.includes(t)) return null;
+    }
+    return data;
+  } catch (e) {
+    return null;
+  }
+}
+
+function saveLayout() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      rows: state.rows,
+      seatCols: state.seatCols,
+      grid: state.grid,
+    }));
+  } catch (e) { /* localStorage 不可用时静默忽略 */ }
+}
+
 /* ---------------- 布局编辑器 ---------------- */
 
 function clamp(n, min, max) {
@@ -123,6 +154,7 @@ function genGrid() {
   const layout = buildLayout(rows, seatCols);
   state.cols = layout.grid[0].length;
   state.grid = layout.grid;
+  saveLayout();
   clearAssignment(true);
   setGridColumns();
   renderSeatGrid();
@@ -136,6 +168,7 @@ function resetLayout() {
   state.grid = DEFAULT_LAYOUT.grid.map((row) => row.slice());
   dom.rowInput.value = state.rows;
   dom.colInput.value = state.seatCols;
+  saveLayout();
   clearAssignment(true);
   setGridColumns();
   renderSeatGrid();
@@ -156,7 +189,7 @@ function renderSeatGrid() {
   }
 }
 
-// 对指定格子应用当前画笔（过道列不可绘制）
+// 对指定格子应用当前画笔并持久化（过道列不可绘制）
 function applyPaint(r, c) {
   if (r < 0 || r >= state.rows || c < 0 || c >= state.cols) return;
   if (state.grid[r][c] === 'gap') return;
@@ -166,6 +199,7 @@ function applyPaint(r, c) {
     cell.className = 'seat-cell type-' + state.paint;
     cell.textContent = cellLabel(state.paint);
   }
+  saveLayout();
 }
 
 /* ---------------- 名单解析与随机分配 ---------------- */
@@ -435,8 +469,6 @@ function startAssign() {
   state.assigning = true;
   state.animCells = animCells;
   state.animIndex = 0;
-  state.rollPhase = 0;
-  const allNames = state.names.map((p) => p.name);
   dom.startBtn.disabled = true;
   dom.skipBtn.disabled = false;
   dom.copyTextBtn.disabled = true;
@@ -445,33 +477,21 @@ function startAssign() {
   updateEditLock();
   updateStatus();
 
-  // 随机滚动定格：每个座位先随机闪现 ROLL_TICKS 次名字，然后定格为真实名字
   state.animTimer = setInterval(() => {
     if (state.animIndex >= state.animCells.length) {
       clearInterval(state.animTimer);
       finishAssign();
       return;
     }
-    const { cell, name, same } = state.animCells[state.animIndex];
-    if (state.rollPhase < ROLL_TICKS) {
-      // 滚动阶段：快速随机换名字
-      cell.className = 'seat-cell type-seat rolling';
-      cell.textContent = allNames[Math.floor(Math.random() * allNames.length)];
-      state.rollPhase++;
-    } else {
-      // 定格为真实名字
-      fillCell(cell, name, same, true);
-      state.rollPhase = 0;
-      state.animIndex++;
-    }
-  }, ROLL_TICK_MS);
+    const { cell, name, same } = state.animCells[state.animIndex++];
+    fillCell(cell, name, same, true); // 翻牌
+  }, 340); // 每格翻牌间隔（略慢，逐个揭晓更清楚）
 }
 
-// 跳过动画：立即定格全部名字
+// 跳过动画：立即翻完所有牌
 function skipAnim() {
   if (!state.assigning) return;
   clearInterval(state.animTimer);
-  state.rollPhase = 0;
   for (const { cell, name, same } of state.animCells) {
     fillCell(cell, name, same, false);
   }
@@ -743,6 +763,7 @@ function importSeatText(text) {
 
   dom.rowInput.value = state.rows;
   dom.colInput.value = state.seatCols;
+  saveLayout();
   setGridColumns();
   renderSeatGrid();
   renderAssigned();
@@ -966,10 +987,18 @@ function bindEvents() {
 
 function init() {
   cacheDom();
-  state.rows = DEFAULT_LAYOUT.rows;
-  state.seatCols = DEFAULT_LAYOUT.seatCols;
-  state.cols = DEFAULT_LAYOUT.grid[0].length;
-  state.grid = DEFAULT_LAYOUT.grid.map((row) => row.slice());
+  const saved = loadLayout();
+  if (saved) {
+    state.rows = saved.rows;
+    state.seatCols = saved.seatCols;
+    state.cols = saved.grid[0].length;
+    state.grid = saved.grid;
+  } else {
+    state.rows = DEFAULT_LAYOUT.rows;
+    state.seatCols = DEFAULT_LAYOUT.seatCols;
+    state.cols = DEFAULT_LAYOUT.grid[0].length;
+    state.grid = DEFAULT_LAYOUT.grid.map((row) => row.slice());
+  }
   dom.rowInput.value = state.rows;
   dom.colInput.value = state.seatCols;
   bindEvents();
