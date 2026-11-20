@@ -4,18 +4,13 @@
  * - 姓名支持「张三（男）」性别标注，男女同桌优先，
  *   无法避免时同性同桌并以橙色标注
  * - 翻牌动画逐个揭晓（可跳过），结果直接显示在网格上
- * - 日常换座：小组向左横移 / 整行向后移（循环）
+ * - 日常换座：小组左右横移 / 整行前后移动（循环）
  * - 人调换：分配后点选两个座位交换，自动重算同性标记
  * - 导入原来的位置（粘贴文本 / 上传文件）
  * ============================================================ */
 'use strict';
 
 /* ---------------- 常量 ---------------- */
-
-const STORAGE_KEY = 'seatAllocationLayout_v4';
-
-// 画笔类型：只有 seat 参与分配；gap 为固定过道列，不可绘制
-const PAINT_TYPES = ['seat', 'empty'];
 
 const DEFAULT_ROWS = 6;
 const DEFAULT_SEAT_COLS = 8; // 每排座位数（两列一组自动加过道列）
@@ -90,36 +85,6 @@ function cacheDom() {
   dom.shiftBackBtn = document.getElementById('shiftBackBtn');
 }
 
-/* ---------------- localStorage ---------------- */
-
-function loadLayout() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw);
-    if (!data || !Array.isArray(data.grid) || !data.grid.length) return null;
-    const validTypes = ['seat', 'empty', 'gap'];
-    const w = data.grid[0].length;
-    for (const row of data.grid) {
-      if (!Array.isArray(row) || row.length !== w) return null;
-      for (const t of row) if (!validTypes.includes(t)) return null;
-    }
-    return data;
-  } catch (e) {
-    return null;
-  }
-}
-
-function saveLayout() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      rows: state.rows,
-      seatCols: state.seatCols,
-      grid: state.grid,
-    }));
-  } catch (e) { /* localStorage 不可用时静默忽略 */ }
-}
-
 /* ---------------- 布局编辑器 ---------------- */
 
 function clamp(n, min, max) {
@@ -154,7 +119,6 @@ function genGrid() {
   const layout = buildLayout(rows, seatCols);
   state.cols = layout.grid[0].length;
   state.grid = layout.grid;
-  saveLayout();
   clearAssignment(true);
   setGridColumns();
   renderSeatGrid();
@@ -168,7 +132,6 @@ function resetLayout() {
   state.grid = DEFAULT_LAYOUT.grid.map((row) => row.slice());
   dom.rowInput.value = state.rows;
   dom.colInput.value = state.seatCols;
-  saveLayout();
   clearAssignment(true);
   setGridColumns();
   renderSeatGrid();
@@ -189,7 +152,7 @@ function renderSeatGrid() {
   }
 }
 
-// 对指定格子应用当前画笔并持久化（过道列不可绘制）
+// 对指定格子应用当前画笔（过道列不可绘制）
 function applyPaint(r, c) {
   if (r < 0 || r >= state.rows || c < 0 || c >= state.cols) return;
   if (state.grid[r][c] === 'gap') return;
@@ -199,7 +162,6 @@ function applyPaint(r, c) {
     cell.className = 'seat-cell type-' + state.paint;
     cell.textContent = cellLabel(state.paint);
   }
-  saveLayout();
 }
 
 /* ---------------- 名单解析与随机分配 ---------------- */
@@ -763,7 +725,6 @@ function importSeatText(text) {
 
   dom.rowInput.value = state.rows;
   dom.colInput.value = state.seatCols;
-  saveLayout();
   setGridColumns();
   renderSeatGrid();
   renderAssigned();
@@ -987,18 +948,10 @@ function bindEvents() {
 
 function init() {
   cacheDom();
-  const saved = loadLayout();
-  if (saved) {
-    state.rows = saved.rows;
-    state.seatCols = saved.seatCols;
-    state.cols = saved.grid[0].length;
-    state.grid = saved.grid;
-  } else {
-    state.rows = DEFAULT_LAYOUT.rows;
-    state.seatCols = DEFAULT_LAYOUT.seatCols;
-    state.cols = DEFAULT_LAYOUT.grid[0].length;
-    state.grid = DEFAULT_LAYOUT.grid.map((row) => row.slice());
-  }
+  state.rows = DEFAULT_LAYOUT.rows;
+  state.seatCols = DEFAULT_LAYOUT.seatCols;
+  state.cols = DEFAULT_LAYOUT.grid[0].length;
+  state.grid = DEFAULT_LAYOUT.grid.map((row) => row.slice());
   dom.rowInput.value = state.rows;
   dom.colInput.value = state.seatCols;
   bindEvents();
