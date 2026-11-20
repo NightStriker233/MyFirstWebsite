@@ -12,7 +12,7 @@
 
 /* ---------------- 常量 ---------------- */
 
-const STORAGE_KEY = 'seatAllocationLayout_v3';
+const STORAGE_KEY = 'seatAllocationLayout_v4';
 
 // 画笔类型：只有 seat 参与分配；gap 为固定过道列，不可绘制
 const PAINT_TYPES = ['seat', 'empty'];

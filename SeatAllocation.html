@@ -8,6 +8,12 @@
   <link rel="stylesheet" href="style.css">
   <style>
     /* ===== 座位分配页（Excel 极简风格） ===== */
+    /* 本页内容区与导航加宽以容纳座位表（其他页面不受影响） */
+    .container.nav-container,
+    .tools-section .container {
+      max-width: 1100px;
+    }
+
     .seat-desc {
       color: var(--muted);
       font-size: 0.9rem;
